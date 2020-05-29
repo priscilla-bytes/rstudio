@@ -54,6 +54,7 @@ function formatMenu(ui: EditorUI, commands: EditorCommand[]) {
         items: [
           { command: EditorCommandId.BulletList },
           { command: EditorCommandId.OrderedList },
+          { separator: true },
           { command: EditorCommandId.TightList },
           { separator: true },
           { command: EditorCommandId.ListItemCheck },
@@ -62,7 +63,7 @@ function formatMenu(ui: EditorUI, commands: EditorCommand[]) {
           { command: EditorCommandId.ListItemSink },
           { command: EditorCommandId.ListItemLift },
           { separator: true },
-          { command: EditorCommandId.OrderedListEdit },
+          { command: EditorCommandId.EditListProperties },
         ],
       },
     },
@@ -103,20 +104,22 @@ function insertMenu(ui: EditorUI, commands: EditorCommand[]) {
     { command: EditorCommandId.Image },
     { command: EditorCommandId.Link },
     { command: EditorCommandId.HorizontalRule },
-    ...(haveAnyOf(commands, EditorCommandId.DefinitionList) ? [
-      { separator: true },
-      {
-        subMenu: {
-          text: ui.context.translateText('Definition'),
-          items: [
-            { command: EditorCommandId.DefinitionList },
-            { separator: true },
-            { command: EditorCommandId.DefinitionTerm },
-            { command: EditorCommandId.DefinitionDescription },
-          ],
-        },
-      },
-    ] : []),
+    ...(haveAnyOf(commands, EditorCommandId.DefinitionList)
+      ? [
+          { separator: true },
+          {
+            subMenu: {
+              text: ui.context.translateText('Definition'),
+              items: [
+                { command: EditorCommandId.DefinitionList },
+                { separator: true },
+                { command: EditorCommandId.DefinitionTerm },
+                { command: EditorCommandId.DefinitionDescription },
+              ],
+            },
+          },
+        ]
+      : []),
     { separator: true },
     { command: EditorCommandId.InlineMath },
     { command: EditorCommandId.DisplayMath },

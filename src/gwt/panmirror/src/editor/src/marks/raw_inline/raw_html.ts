@@ -64,14 +64,27 @@ const extension = (pandocExtensions: PandocExtensions, pandocCapabilities: Pando
                 const format = tok.c[kRawInlineFormat];
                 return isRawHTMLFormat(format);
               },
-              handler: (_schema: Schema) => {
+              handler: (schema: Schema) => {
                 return (writer: ProsemirrorWriter, tok: PandocToken) => {
-                  const text = tok.c[kRawInlineContent];
-                  writer.writeInlineHTML(text);
+                  const html = tok.c[kRawInlineContent];
+                  if (writer.hasInlineHTMLWriter(html)) {
+                    writer.writeInlineHTML(html);
+                  } else {
+                    writeInlneHTML(schema, html, writer);
+                  }
                 };
               },
             },
           ],
+
+          inlineHTMLReader: (schema: Schema, html: string, writer?: ProsemirrorWriter) => {
+            // always write single line html as inline
+            if (writer) {
+              writeInlneHTML(schema, html, writer);
+            }
+
+            return true;
+          },
           writer: {
             priority: 20,
             write: (output: PandocOutput, _mark: Mark, parent: Fragment) => {
@@ -103,6 +116,13 @@ const extension = (pandocExtensions: PandocExtensions, pandocCapabilities: Pando
     },
   };
 };
+
+function writeInlneHTML(schema: Schema, html: string, writer: ProsemirrorWriter) {
+  const mark = schema.marks.raw_html.create();
+  writer.openMark(mark);
+  writer.writeText(html);
+  writer.closeMark(mark);
+}
 
 export function rawHtmlInputRule(schema: Schema, filter: MarkInputRuleFilter) {
   return new InputRule(/>$/, (state: EditorState, match: string[], start: number, end: number) => {
@@ -149,9 +169,9 @@ export function rawHtmlInputRule(schema: Schema, filter: MarkInputRuleFilter) {
 function tagInfo(text: string, endLoc: number) {
   const startLoc = tagStartLoc(text, endLoc);
   if (startLoc !== -1) {
-    // don't match if preceding character is a backtick 
+    // don't match if preceding character is a backtick
     // (user is attempting to write an html tag in code)
-    if (text.charAt(startLoc-1) === '`') {
+    if (text.charAt(startLoc - 1) === '`') {
       return null;
     }
     const tagText = text.substring(startLoc, endLoc + 1);

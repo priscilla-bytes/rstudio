@@ -108,6 +108,7 @@ const extension = (
               block: 'raw_block',
             },
           ],
+
           // we define a custom blockReader here so that we can convert html and tex blocks with
           // a single line of code into paragraph with a raw inline
           blockReader: (schema: Schema, tok: PandocToken, writer: ProsemirrorWriter) => {
@@ -119,7 +120,7 @@ const extension = (
             }
           },
           writer: (output: PandocOutput, node: ProsemirrorNode) => {
-            if ([kHTMLFormat, kTexFormat].includes(node.attrs.format)) {
+            if (!pandocExtensions.raw_attribute) {
               output.writeToken(PandocTokenType.Para, () => {
                 output.writeRawMarkdown(node.textContent);
               });
@@ -157,17 +158,18 @@ function readPandocRawBlock(schema: Schema, tok: PandocToken, writer: Prosemirro
   // highlighting and more seamless editing experience)
   const format = tok.c[kRawBlockFormat];
   const text = tok.c[kRawBlockContent] as string;
-  if (isRawHTMLFormat(format) && isSingleLineHTML(text.trimRight())) {
+  const textTrimmed = text.trimRight();
+  if (isRawHTMLFormat(format) && isSingleLineHTML(textTrimmed) && writer.hasInlineHTMLWriter(textTrimmed)) {
     writer.openNode(schema.nodes.paragraph, {});
-    writer.writeInlineHTML(text.trimRight());
+    writer.writeInlineHTML(textTrimmed);
     writer.closeNode();
 
     // similarly, single lines of tex should be read as inline tex
-  } else if (format === kTexFormat && isSingleLineTex(text.trimRight())) {
+  } else if (format === kTexFormat && isSingleLineTex(textTrimmed)) {
     writer.openNode(schema.nodes.paragraph, {});
     const rawTexMark = schema.marks.raw_tex.create();
     writer.openMark(rawTexMark);
-    writer.writeText(text.trimRight());
+    writer.writeText(textTrimmed);
     writer.closeMark(rawTexMark);
     writer.closeNode();
   } else {

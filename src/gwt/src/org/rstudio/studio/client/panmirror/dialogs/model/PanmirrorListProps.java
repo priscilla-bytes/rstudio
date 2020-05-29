@@ -1,5 +1,5 @@
 /*
- * events.ts
+ * PanmirrorListProps.java
  *
  * Copyright (C) 2020 by RStudio, PBC
  *
@@ -13,17 +13,18 @@
  *
  */
 
-export enum EditorEvent {
-  Update = 'panmirrorUpdate',
-  OutlineChange = 'panmirrorOutlineChange',
-  StateChange = 'panmirrorStateChange',
-  Resize = 'panmirrorResize',
-  Layout = 'panmirrorLayout',
-  Scroll = 'panmirrorScroll',
-  Focus = 'panmirrorFocus',
+
+package org.rstudio.studio.client.panmirror.dialogs.model;
+
+import jsinterop.annotations.JsType;
+
+@JsType
+public class PanmirrorListProps
+{
+   public String type;
+   public boolean tight;
+   public int order;
+   public String number_style;
+   public String number_delim;
 }
 
-export interface EditorEvents {
-  subscribe: (event: EditorEvent, handler: VoidFunction) => VoidFunction;
-  emit: (event: EditorEvent) => void;
-}

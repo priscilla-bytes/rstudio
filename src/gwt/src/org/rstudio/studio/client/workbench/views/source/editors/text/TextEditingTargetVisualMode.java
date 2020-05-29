@@ -49,7 +49,7 @@ import org.rstudio.studio.client.panmirror.PanmirrorWidget.FormatSource;
 import org.rstudio.studio.client.panmirror.PanmirrorWriterOptions;
 import org.rstudio.studio.client.panmirror.command.PanmirrorCommands;
 import org.rstudio.studio.client.panmirror.events.PanmirrorFocusEvent;
-import org.rstudio.studio.client.panmirror.events.PanmirrorSelectionChangedEvent;
+import org.rstudio.studio.client.panmirror.events.PanmirrorStateChangeEvent;
 import org.rstudio.studio.client.panmirror.events.PanmirrorUpdatedEvent;
 import org.rstudio.studio.client.panmirror.format.PanmirrorExtendedDocType;
 import org.rstudio.studio.client.panmirror.format.PanmirrorFormat;
@@ -618,7 +618,7 @@ public class TextEditingTargetVisualMode implements CommandPaletteEntrySource
             if (success)
             {
                // sync to editor outline prefs
-               panmirror_.showOutline(getOutlineVisible(), getOutlineWidth());
+               panmirror_.showOutline(establishOutlineVisible(), getOutlineWidth());
                
                // show find replace button
                findReplaceButton_.setVisible(true);
@@ -705,9 +705,8 @@ public class TextEditingTargetVisualMode implements CommandPaletteEntrySource
             panmirrorFormatConfig_ = new FormatConfig(new PanmirrorUITools().format);
             
             // remove some keybindings that conflict with the ide
-            disableKeys(
-               PanmirrorCommands.TightList
-            );
+            // (currently no known conflicts)
+            disableKeys();
            
             // periodically sync edits back to main editor
             syncOnIdle_ = new DebouncedCommand(1000)
@@ -749,10 +748,10 @@ public class TextEditingTargetVisualMode implements CommandPaletteEntrySource
             });
             
             // save selection
-            panmirror_.addPanmirrorSelectionChangedHandler(new PanmirrorSelectionChangedEvent.Handler()
+            panmirror_.addPanmirrorStateChangeHandler(new PanmirrorStateChangeEvent.Handler()
             {
                @Override
-               public void onPanmirrorSelectionChanged(PanmirrorSelectionChangedEvent event)
+               public void onPanmirrorStateChange(PanmirrorStateChangeEvent event)
                {
                   saveLocationOnIdle_.nudge();
                }
@@ -905,6 +904,13 @@ public class TextEditingTargetVisualMode implements CommandPaletteEntrySource
       return view_.editorContainer().getEditor();
    }
   
+   private boolean establishOutlineVisible()
+   {
+      return target_.establishPreferredOutlineWidgetVisibility(
+         prefs_.visualMarkdownEditingShowDocOutline().getValue()
+      );  
+   }
+   
    private boolean getOutlineVisible()
    {
       return target_.getPreferredOutlineWidgetVisibility(
