@@ -317,12 +317,11 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
 
    public int getPhysicalTabIndex()
    {
-      return activeColumn_.getPhysicalTabIndex();
+      return getActive().getPhysicalTabIndex();
    }
 
    public ArrayList<Widget> getWidgets(boolean excludeMain)
    {
-
       ArrayList<Widget> result = new ArrayList<Widget>();
       columnMap_.forEach((name, column) -> {
          if (!excludeMain || !StringUtil.equals(name, MAIN_SOURCE_NAME))

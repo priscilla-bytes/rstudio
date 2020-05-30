@@ -22,26 +22,60 @@
    margin-bottom: 11px;
 }
 
-.paneLayoutTable td.paneLayoutTable {
+.column {
    background-color: white;
-   height: 200px;
+   height: 400px;
+   max-height: 400px;
    vertical-align: top;
    padding-top: 0px;
+   /*
    -moz-border-radius: 6px;
    -webkit-border-radius: 6px;
+   */
    border-radius: 6px;
+   overflow: hidden;
+}
+
+.column select {
+   overflow: hidden;
+}
+
+.paneLayoutTable {
+   width: 435px;
+   max-height: 450px !important;
+   overflow: hidden;
+}
+
+.paneLayoutTable td.paneLayoutTable {
+   background-color: white;
+   width: auto;
+   height: 150px;
+   max-height: 150px;
+   min-height: 200px;
+   vertical-align: top;
+   padding-top: 0px;
+    /*
+   -moz-border-radius: 6px;
+   -webkit-border-radius: 6px;
+     */
+   border-radius: 6px;
+   /*overflow-y: scroll;*/
 }
 
 .paneLayoutTable .gwt-CheckBox {
    display: block;
-   margin: 0 0 0 8px;
+   /*
+   margin: 0 0 0 2px;
    max-height: 18px;
    font-size: 11px;
+   overflow: scroll;
+    */
 }
 
 .paneLayoutTable select {
-   width: 195px;
+   /*width: 195px;
    margin-bottom: 5px;
+   overflow-x: scroll;*/
 }
 
 .themeChooser select {

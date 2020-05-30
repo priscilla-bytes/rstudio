@@ -25,8 +25,11 @@ import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
+import com.google.gwt.user.client.ui.ScrollPanel;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -34,13 +37,15 @@ import org.rstudio.core.client.Debug;
 import org.rstudio.core.client.StringUtil;
 import org.rstudio.core.client.prefs.RestartRequirement;
 import org.rstudio.core.client.resources.ImageResource2x;
+import org.rstudio.core.client.widget.FormLabel;
 import org.rstudio.core.client.widget.ImageButton;
-import org.rstudio.core.client.widget.LayoutGrid;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
+import org.rstudio.studio.client.workbench.prefs.model.UserPrefsAccessor;
 import org.rstudio.studio.client.workbench.ui.PaneConfig;
 import org.rstudio.studio.client.workbench.ui.PaneManager;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PaneLayoutPreferencesPane extends PreferencesPane
 {
@@ -245,18 +250,44 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
             }
          });
 
-      LayoutGrid grid = new LayoutGrid(2, 2);
+      additionalColumnCount_ = value.getAdditionalSourceColumns();
+      FlexTable grid = new FlexTable();
       grid.addStyleName(res.styles().paneLayoutTable());
       grid.setCellSpacing(8);
       grid.setCellPadding(6);
-      grid.setWidget(0, 0, leftTopPanel_ = createPane(leftTop_));
-      grid.setWidget(1, 0, leftBottomPanel_ = createPane(leftBottom_));
-      grid.setWidget(0, 1, rightTopPanel_ = createPane(rightTop_));
-      grid.setWidget(1, 1, rightBottomPanel_ = createPane(rightBottom_));
-      for (int row = 0; row < 2; row++)
-         for (int col = 0; col < 2; col++)
-            grid.getCellFormatter().setStyleName(row, col,
-                                                 res.styles().paneLayoutTable());
+
+      int topColumn;
+      int tableWidth = 350;
+      double sourceWidth = (tableWidth / (additionalColumnCount_ +4));
+      double otherWidth = 2 * sourceWidth;
+      String sWidth = Double.toString(sourceWidth) + "px";
+      String oWidth = Double.toString(otherWidth) + "px";
+      for (topColumn = 0; topColumn < additionalColumnCount_; topColumn++)
+      {
+         VerticalPanel vp = createColumn(sWidth);
+         visibleColumns_.add(vp);
+         grid.setWidget(0, topColumn, vp);
+         grid.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
+         grid.getCellFormatter().setStyleName(0, topColumn, res.styles().column());
+         //grid.getCellFormatter().setStyleName(1, column, res.styles().paneLayoutTable());
+         grid.getColumnFormatter().setWidth(topColumn, sWidth);
+      }
+      leftTop_.setWidth(oWidth);
+      leftBottom_.setWidth(oWidth);
+      rightTop_.setWidth(oWidth);
+      rightBottom_.setWidth(oWidth);
+      grid.setWidget(0, topColumn, leftTopPanel_ = createPane(leftTop_));
+      grid.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
+
+      grid.setWidget(0, ++topColumn, rightTopPanel_ = createPane(rightTop_));
+      grid.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
+
+      int bottomColumn = 0;
+      grid.setWidget(1, bottomColumn, leftBottomPanel_ = createPane(leftBottom_));
+      grid.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
+
+      grid.setWidget(1, ++bottomColumn, rightBottomPanel_ = createPane(rightBottom_));
+      grid.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
       add(grid);
 
       visiblePanePanels_ = new VerticalPanel[] {leftTopPanel_, leftBottomPanel_,
@@ -323,6 +354,20 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    {
       VerticalPanel vp = new VerticalPanel();
       vp.add(listBox);
+      return vp;
+   }
+
+   private VerticalPanel createColumn(String width)
+   {
+      FormLabel label = new FormLabel();
+      label.setText(UserPrefsAccessor.Panes.QUADRANTS_SOURCE);
+      // !!! Roles.getTextboxRole().setAriaLabelProperty(tb.getElement(), "Additional source
+      // column");
+      label.setWidth(width);
+
+      VerticalPanel vp = new VerticalPanel();
+      vp.add(label);
+
       return vp;
    }
 
@@ -455,6 +500,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    private final ListBox rightTop_;
    private final ListBox rightBottom_;
    private final ListBox[] visiblePanes_;
+   private final List<VerticalPanel> visibleColumns_ = new ArrayList<>();
    private final VerticalPanel leftTopPanel_;
    private final VerticalPanel leftBottomPanel_;
    private final VerticalPanel rightTopPanel_;
