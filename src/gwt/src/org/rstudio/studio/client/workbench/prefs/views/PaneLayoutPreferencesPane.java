@@ -26,10 +26,11 @@ import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlexTable;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.ScrollPanel;
-import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -104,16 +105,20 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       ModuleList()
       {
          checkBoxes_ = new ArrayList<>();
-         VerticalPanel panel = new VerticalPanel();
+         ScrollPanel panel = new ScrollPanel();
+         FlowPanel lPanel = new FlowPanel();
          for (String module : PaneConfig.getAllTabs())
          {
             CheckBox checkBox = new CheckBox(module, false);
             checkBox.addValueChangeHandler(this);
             checkBoxes_.add(checkBox);
-            panel.add(checkBox);
+            lPanel.add(checkBox);
             if (module == "Presentation")
                checkBox.setVisible(false);
          }
+         panel.setStyleName(res_.styles().paneLayoutTable());
+         panel.setHeight("150px");
+         panel.add(lPanel);
          initWidget(panel);
       }
 
@@ -269,7 +274,6 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          grid.setWidget(0, topColumn, vp);
          grid.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
          grid.getCellFormatter().setStyleName(0, topColumn, res.styles().column());
-         //grid.getCellFormatter().setStyleName(1, column, res.styles().paneLayoutTable());
          grid.getColumnFormatter().setWidth(topColumn, sWidth);
       }
       leftTop_.setWidth(oWidth);
