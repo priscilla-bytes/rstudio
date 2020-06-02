@@ -2,7 +2,7 @@
 @external gwt-CheckBox;
 
 .panelContainer {
-   width: 570px;
+   width: 300px;
    height: 500px;
 }
 
@@ -22,9 +22,26 @@
    margin-bottom: 11px;
 }
 
+.paneLayoutTable {
+   width: 435px;
+   overflow: scroll;
+}
+
+.paneLayoutTable td.paneLayoutTable {
+   background-color: white;
+   width: 50px;
+   height: 50px;
+   vertical-align: top;
+   padding: 0px;
+   border: none;
+   -moz-border-radius: 6px;
+   -webkit-border-radius: 6px;
+   border-radius: 6px;
+}
+
 .column {
    background-color: white;
-   height: 400px;
+   height: 300px;
    vertical-align: top;
    padding-top: 0px;
    -moz-border-radius: 6px;
@@ -33,39 +50,16 @@
    overflow: hidden;
 }
 
-.column select {
-   overflow: hidden;
-}
-
-.paneLayoutTable {
-   width: 435px;
-   overflow: scroll;
-}
-
-.paneLayoutTable td.paneLayoutTable {
-   background-color: white;
-   width: auto;
-   height: 100px;
-   vertical-align: top;
-   padding: 0px;
-    border: none;
-   /*
-   -moz-border-radius: 6px;
-   -webkit-border-radius: 6px;
-   border-radius: 6px;
-   overflow: scroll;
-    */
-}
-
 .paneLayoutTable .gwt-CheckBox {
    display: block;
-   /*margin: 0 0 0 2px;
+   width: fit-content;
+   margin: 0 0 0 2px;
    max-height: 18px;
-   font-size: 11px;*/
+   font-size: 11px;
 }
 
 .paneLayoutTable select {
-   width: 195px;
+   width: 100px;
    margin-bottom: 5px;
 }
 

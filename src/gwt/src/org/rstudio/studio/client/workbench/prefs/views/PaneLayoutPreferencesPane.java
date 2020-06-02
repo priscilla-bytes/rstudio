@@ -28,7 +28,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -40,6 +39,7 @@ import org.rstudio.core.client.prefs.RestartRequirement;
 import org.rstudio.core.client.resources.ImageResource2x;
 import org.rstudio.core.client.widget.FormLabel;
 import org.rstudio.core.client.widget.ImageButton;
+import org.rstudio.core.client.widget.ScrollPanelWithClick;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefsAccessor;
 import org.rstudio.studio.client.workbench.ui.PaneConfig;
@@ -105,21 +105,24 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       ModuleList()
       {
          checkBoxes_ = new ArrayList<>();
-         ScrollPanel panel = new ScrollPanel();
-         FlowPanel lPanel = new FlowPanel();
+         ScrollPanel scrollPanel = new ScrollPanelWithClick();
+         FlowPanel flowPanel = new FlowPanel();
          for (String module : PaneConfig.getAllTabs())
          {
             CheckBox checkBox = new CheckBox(module, false);
             checkBox.addValueChangeHandler(this);
+            checkBox.setWidth("fit-content");
             checkBoxes_.add(checkBox);
-            lPanel.add(checkBox);
+            flowPanel.add(checkBox);
             if (module == "Presentation")
                checkBox.setVisible(false);
          }
-         panel.setStyleName(res_.styles().paneLayoutTable());
-         panel.setHeight("150px");
-         panel.add(lPanel);
-         initWidget(panel);
+         scrollPanel.setStyleName(res_.styles().paneLayoutTable());
+         //scrollPanel.addStyleName("ace-scroller");
+         scrollPanel.setHeight("100px");
+         scrollPanel.setWidth("100px");
+         scrollPanel.add(flowPanel);
+         initWidget(scrollPanel);
       }
 
       public void onValueChange(ValueChangeEvent<Boolean> event)
@@ -257,6 +260,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
       additionalColumnCount_ = value.getAdditionalSourceColumns();
       FlexTable grid = new FlexTable();
+      grid.addStyleName(res.styles().newSection());
       grid.addStyleName(res.styles().paneLayoutTable());
       grid.setCellSpacing(8);
       grid.setCellPadding(6);
