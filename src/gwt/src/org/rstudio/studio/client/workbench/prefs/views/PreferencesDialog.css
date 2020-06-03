@@ -2,7 +2,7 @@
 @external gwt-CheckBox;
 
 .panelContainer {
-   width: 300px;
+   width: 570px;
    height: 500px;
 }
 
@@ -23,20 +23,18 @@
 }
 
 .paneLayoutTable {
-   width: 435px;
-   overflow: scroll;
+   margin-left: auto;
 }
 
 .paneLayoutTable td.paneLayoutTable {
    background-color: white;
-   width: 50px;
-   height: 50px;
+   height: 200px;
    vertical-align: top;
    padding: 0px;
-   border: none;
-   -moz-border-radius: 6px;
-   -webkit-border-radius: 6px;
-   border-radius: 6px;
+  border: none;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+  border-radius: 6px;
 }
 
 .column {
@@ -52,14 +50,12 @@
 
 .paneLayoutTable .gwt-CheckBox {
    display: block;
-   width: fit-content;
    margin: 0 0 0 2px;
    max-height: 18px;
    font-size: 11px;
 }
 
 .paneLayoutTable select {
-   width: 100px;
    margin-bottom: 5px;
 }
 

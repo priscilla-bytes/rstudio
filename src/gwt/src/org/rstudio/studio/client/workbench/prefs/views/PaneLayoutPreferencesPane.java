@@ -102,7 +102,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    class ModuleList extends Composite implements ValueChangeHandler<Boolean>,
                                                  HasValueChangeHandlers<ArrayList<Boolean>>
    {
-      ModuleList()
+      ModuleList(String width)
       {
          checkBoxes_ = new ArrayList<>();
          ScrollPanel scrollPanel = new ScrollPanelWithClick();
@@ -111,16 +111,15 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          {
             CheckBox checkBox = new CheckBox(module, false);
             checkBox.addValueChangeHandler(this);
-            checkBox.setWidth("fit-content");
+            checkBox.setWidth(width);
             checkBoxes_.add(checkBox);
             flowPanel.add(checkBox);
             if (module == "Presentation")
                checkBox.setVisible(false);
          }
          scrollPanel.setStyleName(res_.styles().paneLayoutTable());
-         //scrollPanel.addStyleName("ace-scroller");
-         scrollPanel.setHeight("100px");
-         scrollPanel.setWidth("100px");
+         scrollPanel.setHeight("180px");
+         scrollPanel.setWidth(width);
          scrollPanel.add(flowPanel);
          initWidget(scrollPanel);
       }
@@ -259,53 +258,54 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          });
 
       additionalColumnCount_ = value.getAdditionalSourceColumns();
-      FlexTable grid = new FlexTable();
-      grid.addStyleName(res.styles().newSection());
-      grid.addStyleName(res.styles().paneLayoutTable());
-      grid.setCellSpacing(8);
-      grid.setCellPadding(6);
+      grid_ = new FlexTable();
+      grid_.addStyleName(res.styles().newSection());
+      grid_.addStyleName(res.styles().paneLayoutTable());
+      grid_.setCellSpacing(8);
+      grid_.setCellPadding(6);
 
       int topColumn;
-      int tableWidth = 350;
+      int tableWidth = 420;
       double sourceWidth = (tableWidth / (additionalColumnCount_ +4));
       double otherWidth = 2 * sourceWidth;
+
       String sWidth = Double.toString(sourceWidth) + "px";
       String oWidth = Double.toString(otherWidth) + "px";
       for (topColumn = 0; topColumn < additionalColumnCount_; topColumn++)
       {
          VerticalPanel vp = createColumn(sWidth);
          visibleColumns_.add(vp);
-         grid.setWidget(0, topColumn, vp);
-         grid.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
-         grid.getCellFormatter().setStyleName(0, topColumn, res.styles().column());
-         grid.getColumnFormatter().setWidth(topColumn, sWidth);
+         grid_.setWidget(0, topColumn, vp);
+         grid_.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
+         grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().column());
+         grid_.getColumnFormatter().setWidth(topColumn, sWidth);
       }
       leftTop_.setWidth(oWidth);
       leftBottom_.setWidth(oWidth);
       rightTop_.setWidth(oWidth);
       rightBottom_.setWidth(oWidth);
-      grid.setWidget(0, topColumn, leftTopPanel_ = createPane(leftTop_));
-      grid.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
+      grid_.setWidget(0, topColumn, leftTopPanel_ = createPane(leftTop_));
+      grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
 
-      grid.setWidget(0, ++topColumn, rightTopPanel_ = createPane(rightTop_));
-      grid.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
+      grid_.setWidget(0, ++topColumn, rightTopPanel_ = createPane(rightTop_));
+      grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
 
       int bottomColumn = 0;
-      grid.setWidget(1, bottomColumn, leftBottomPanel_ = createPane(leftBottom_));
-      grid.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
+      grid_.setWidget(1, bottomColumn, leftBottomPanel_ = createPane(leftBottom_));
+      grid_.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
 
-      grid.setWidget(1, ++bottomColumn, rightBottomPanel_ = createPane(rightBottom_));
-      grid.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
-      add(grid);
+      grid_.setWidget(1, ++bottomColumn, rightBottomPanel_ = createPane(rightBottom_));
+      grid_.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
+      add(grid_);
 
       visiblePanePanels_ = new VerticalPanel[] {leftTopPanel_, leftBottomPanel_,
                                             rightTopPanel_, rightBottomPanel_};
 
-      tabSet1ModuleList_ = new ModuleList();
+      tabSet1ModuleList_ = new ModuleList(oWidth);
       tabSet1ModuleList_.setValue(toArrayList(userPrefs.panes().getGlobalValue().getTabSet1()));
-      tabSet2ModuleList_ = new ModuleList();
+      tabSet2ModuleList_ = new ModuleList(oWidth);
       tabSet2ModuleList_.setValue(toArrayList(userPrefs.panes().getGlobalValue().getTabSet2()));
-      hiddenTabSetModuleList_ = new ModuleList();
+      hiddenTabSetModuleList_ = new ModuleList(oWidth);
       hiddenTabSetModuleList_.setValue(toArrayList(
                userPrefs.panes().getGlobalValue().getHiddenTabSet()));
 
@@ -521,4 +521,5 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
    private PaneManager paneManager_;
    private int additionalColumnCount_;
+   private FlexTable grid_;
 }
