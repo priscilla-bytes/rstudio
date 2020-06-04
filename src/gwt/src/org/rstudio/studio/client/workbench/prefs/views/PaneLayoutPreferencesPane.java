@@ -195,12 +195,15 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       if (userPrefs.enableAdditionalColumns().getGlobalValue())
       {
          additionalColumnCount_ = userPrefs.panes().getGlobalValue().getAdditionalSourceColumns();
+         // !!! temporary debugging call
+         paneManager_.syncAdditionalColumnCount(additionalColumnCount_);
          addSource_ = new ImageButton("Add source", res_.iconAddSourcePane2x());
          addSource_.setVisible(true);
          add(addSource_);
          addSource_.addClickHandler(event ->
          {
             additionalColumnCount_ = paneManager_.addSourceWindow();
+            updateTable();
          });
       }
       else
@@ -258,56 +261,19 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          });
 
       additionalColumnCount_ = value.getAdditionalSourceColumns();
-      grid_ = new FlexTable();
-      grid_.addStyleName(res.styles().newSection());
-      grid_.addStyleName(res.styles().paneLayoutTable());
-      grid_.setCellSpacing(8);
-      grid_.setCellPadding(6);
 
-      int topColumn;
-      int tableWidth = 420;
-      double sourceWidth = (tableWidth / (additionalColumnCount_ +4));
-      double otherWidth = 2 * sourceWidth;
-
-      String sWidth = Double.toString(sourceWidth) + "px";
-      String oWidth = Double.toString(otherWidth) + "px";
-      for (topColumn = 0; topColumn < additionalColumnCount_; topColumn++)
-      {
-         VerticalPanel vp = createColumn(sWidth);
-         visibleColumns_.add(vp);
-         grid_.setWidget(0, topColumn, vp);
-         grid_.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
-         grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().column());
-         grid_.getColumnFormatter().setWidth(topColumn, sWidth);
-      }
-      leftTop_.setWidth(oWidth);
-      leftBottom_.setWidth(oWidth);
-      rightTop_.setWidth(oWidth);
-      rightBottom_.setWidth(oWidth);
-      grid_.setWidget(0, topColumn, leftTopPanel_ = createPane(leftTop_));
-      grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
-
-      grid_.setWidget(0, ++topColumn, rightTopPanel_ = createPane(rightTop_));
-      grid_.getCellFormatter().setStyleName(0, topColumn, res.styles().paneLayoutTable());
-
-      int bottomColumn = 0;
-      grid_.setWidget(1, bottomColumn, leftBottomPanel_ = createPane(leftBottom_));
-      grid_.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
-
-      grid_.setWidget(1, ++bottomColumn, rightBottomPanel_ = createPane(rightBottom_));
-      grid_.getCellFormatter().setStyleName(1, bottomColumn, res.styles().paneLayoutTable());
-      add(grid_);
-
+      String cellWidth = updateTable();
       visiblePanePanels_ = new VerticalPanel[] {leftTopPanel_, leftBottomPanel_,
                                             rightTopPanel_, rightBottomPanel_};
 
-      tabSet1ModuleList_ = new ModuleList(oWidth);
+      tabSet1ModuleList_ = new ModuleList(cellWidth);
       tabSet1ModuleList_.setValue(toArrayList(userPrefs.panes().getGlobalValue().getTabSet1()));
-      tabSet2ModuleList_ = new ModuleList(oWidth);
+      tabSet2ModuleList_ = new ModuleList(cellWidth);
       tabSet2ModuleList_.setValue(toArrayList(userPrefs.panes().getGlobalValue().getTabSet2()));
-      hiddenTabSetModuleList_ = new ModuleList(oWidth);
+      hiddenTabSetModuleList_ = new ModuleList(cellWidth);
       hiddenTabSetModuleList_.setValue(toArrayList(
                userPrefs.panes().getGlobalValue().getHiddenTabSet()));
+
 
       ValueChangeHandler<ArrayList<Boolean>> vch = new ValueChangeHandler<ArrayList<Boolean>>()
       {
@@ -356,6 +322,99 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
       updateTabSetPositions();
       updateTabSetLabels();
+   }
+
+   private String updateTable()
+   {
+      // nothing has changed since the last update
+      if (grid_ != null && lastKnownAdditionalColumnCount_ == additionalColumnCount_)
+         return "";
+
+      int tableWidth = 420;
+
+      // cells will be twice a wide as columns to preserve space (only cells have checkboxes)
+      Debug.logToConsole("additionalColumnCount_: " + additionalColumnCount_);
+      int columnCount = (additionalColumnCount_ / 2) + 2;
+      Debug.logToConsole("additionalColumnCount_: " + additionalColumnCount_);
+      double cellWidthValue = (double)tableWidth / columnCount;
+      double columnWidthValue = cellWidthValue / 2;
+      String columnWidth = columnWidthValue + "px";
+      String cellWidth = cellWidthValue + "px";
+
+      leftTop_.setWidth(cellWidth);
+      leftBottom_.setWidth(cellWidth);
+      rightTop_.setWidth(cellWidth);
+      rightBottom_.setWidth(cellWidth);
+
+      // this is the first time we're setting up the table
+      if (grid_ == null)
+      {
+         grid_ = new FlexTable();
+         grid_.addStyleName(res_.styles().newSection());
+         grid_.addStyleName(res_.styles().paneLayoutTable());
+         grid_.setCellSpacing(8);
+         grid_.setCellPadding(6);
+
+         // the two rows have different columns because the source columns only use one row
+         int topColumn;
+         int bottomColumn = 0;
+         for (topColumn = 0; topColumn < additionalColumnCount_; topColumn++)
+         {
+            VerticalPanel vp = createColumn(columnWidth);
+            visibleColumns_.add(vp);
+            grid_.setWidget(0, topColumn, vp);
+            grid_.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
+            grid_.getCellFormatter().setStyleName(0, topColumn, res_.styles().column());
+            grid_.getColumnFormatter().setWidth(topColumn, columnWidth);
+         }
+
+         grid_.setWidget(0, topColumn, leftTopPanel_ = createPane(leftTop_));
+         grid_.getCellFormatter().setStyleName(0, topColumn, res_.styles().paneLayoutTable());
+
+         grid_.setWidget(0, ++topColumn, rightTopPanel_ = createPane(rightTop_));
+         grid_.getCellFormatter().setStyleName(0, topColumn, res_.styles().paneLayoutTable());
+
+         grid_.setWidget(1, bottomColumn, leftBottomPanel_ = createPane(leftBottom_));
+         grid_.getCellFormatter().setStyleName(1, bottomColumn, res_.styles().paneLayoutTable());
+
+         grid_.setWidget(1, ++bottomColumn, rightBottomPanel_ = createPane(rightBottom_));
+         grid_.getCellFormatter().setStyleName(1, bottomColumn, res_.styles().paneLayoutTable());
+
+         add(grid_);
+         lastKnownAdditionalColumnCount_ = additionalColumnCount_;
+         return cellWidth;
+      }
+
+      leftTopPanel_.setWidth(cellWidth);
+      leftBottomPanel_.setWidth(cellWidth);
+      rightTopPanel_.setWidth(cellWidth);
+      rightBottomPanel_.setWidth(cellWidth);
+
+      int difference = additionalColumnCount_ - lastKnownAdditionalColumnCount_;
+      lastKnownAdditionalColumnCount_ = additionalColumnCount_;
+
+      // when the number of columns has decreased, remove some
+      for (int i = 0; i > difference && !visibleColumns_.isEmpty(); difference++)
+         visibleColumns_.remove(0);
+
+      // when the number of columns has increased, add some
+      for (int i = 0; i < difference; i++)
+      {
+         grid_.insertCell(0, 0);
+
+         VerticalPanel vp = createColumn(columnWidth);
+         visibleColumns_.add(vp);
+
+         grid_.setWidget(0, 0, vp);
+         grid_.getFlexCellFormatter().setRowSpan(0, 0, 2);
+         grid_.getCellFormatter().setStyleName(0, 0, res_.styles().column());
+      }
+
+      // update the width
+      for (VerticalPanel panel : visibleColumns_)
+         panel.setWidth(columnWidth);
+
+      return cellWidth;
    }
 
    private VerticalPanel createPane(ListBox listBox)
@@ -509,17 +568,19 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    private final ListBox rightBottom_;
    private final ListBox[] visiblePanes_;
    private final List<VerticalPanel> visibleColumns_ = new ArrayList<>();
-   private final VerticalPanel leftTopPanel_;
-   private final VerticalPanel leftBottomPanel_;
-   private final VerticalPanel rightTopPanel_;
-   private final VerticalPanel rightBottomPanel_;
    private final VerticalPanel[] visiblePanePanels_;
    private final ModuleList tabSet1ModuleList_;
    private final ModuleList tabSet2ModuleList_;
    private final ModuleList hiddenTabSetModuleList_;
    private boolean dirty_ = false;
 
+   private VerticalPanel leftTopPanel_;
+   private VerticalPanel leftBottomPanel_;
+   private VerticalPanel rightTopPanel_;
+   private VerticalPanel rightBottomPanel_;
+
    private PaneManager paneManager_;
    private int additionalColumnCount_;
+   private int lastKnownAdditionalColumnCount_ = 0;
    private FlexTable grid_;
 }
