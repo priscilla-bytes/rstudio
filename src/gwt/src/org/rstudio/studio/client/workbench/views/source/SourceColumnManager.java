@@ -38,8 +38,6 @@ import org.rstudio.core.client.widget.OperationWithInput;
 import org.rstudio.core.client.widget.ProgressIndicator;
 import org.rstudio.studio.client.RStudioGinjector;
 import org.rstudio.studio.client.application.events.EventBus;
-import org.rstudio.studio.client.application.ui.CommandPaletteEntry;
-import org.rstudio.studio.client.application.ui.CommandPaletteEntrySource;
 import org.rstudio.studio.client.common.FilePathUtils;
 import org.rstudio.studio.client.common.GlobalDisplay;
 import org.rstudio.studio.client.common.GlobalProgressDelayer;
@@ -48,6 +46,8 @@ import org.rstudio.studio.client.common.dependencies.DependencyManager;
 import org.rstudio.studio.client.common.filetypes.*;
 import org.rstudio.studio.client.common.synctex.Synctex;
 import org.rstudio.studio.client.events.GetEditorContextEvent;
+import org.rstudio.studio.client.palette.model.CommandPaletteEntrySource;
+import org.rstudio.studio.client.palette.model.CommandPaletteItem;
 import org.rstudio.studio.client.rmarkdown.model.RmdChosenTemplate;
 import org.rstudio.studio.client.rmarkdown.model.RmdFrontMatter;
 import org.rstudio.studio.client.rmarkdown.model.RmdOutputFormat;
@@ -81,6 +81,7 @@ import org.rstudio.studio.client.workbench.views.source.editors.text.TextEditing
 import org.rstudio.studio.client.workbench.views.source.editors.text.ace.Position;
 import org.rstudio.studio.client.workbench.views.source.editors.text.ace.Range;
 import org.rstudio.studio.client.workbench.views.source.editors.text.ace.Selection;
+import org.rstudio.studio.client.workbench.views.source.editors.text.events.EditingTargetSelectedEvent;
 import org.rstudio.studio.client.workbench.views.source.editors.text.ui.NewRMarkdownDialog;
 import org.rstudio.studio.client.workbench.views.source.events.*;
 import org.rstudio.studio.client.workbench.views.source.model.*;
@@ -89,8 +90,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Singleton
-public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Handler,
+public class SourceColumnManager implements SessionInitHandler,
                                             CommandPaletteEntrySource,
+                                            SourceExtendedTypeDetectedEvent.Handler,
                                             DebugModeChangedEvent.Handler
 {
    public interface CPSEditingTargetCommand
@@ -128,7 +130,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
                               FileTypeRegistry fileTypeRegistry,
                               EventBus events,
                               DependencyManager dependencyManager,
-                              Session session,
+                              final Session session,
                               Synctex synctex,
                               UserPrefs userPrefs,
                               UserState userState,
@@ -156,45 +158,19 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
 
       rmarkdown_ = new TextEditingTargetRMarkdownHelper();
       vimCommands_ = new SourceVimCommands();
+      columnState_ = null;
       initDynamicCommands();
 
       events_.addHandler(SourceExtendedTypeDetectedEvent.TYPE, this);
       events_.addHandler(DebugModeChangedEvent.TYPE, this);
+      events_.addHandler(SessionInitEvent.TYPE,this);
 
-      events_.addHandler(SessionInitEvent.TYPE, new SessionInitHandler()
+      events_.addHandler(EditingTargetSelectedEvent.TYPE, new EditingTargetSelectedEvent.Handler()
       {
-         public void onSessionInit(SessionInitEvent sie)
+         @Override
+         public void onEditingTargetSelected(EditingTargetSelectedEvent event)
          {
-            new JSObjectStateValue("source-column-manager",
-               "column-info",
-               ClientState.PERSISTENT,
-               session_.getSessionInfo().getClientState(),
-               false)
-            {
-               @Override
-               protected void onInit(JsObject value)
-               {
-                  if (value == null)
-                  {
-                     state_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
-                     return;
-                  }
-                  state_ = value.cast();
-                  for (int i = 0; i < state_.getNames().length; i++)
-                  {
-                     String name = state_.getNames()[i];
-                     if (!StringUtil.equals(name, MAIN_SOURCE_NAME))
-                        add(name, false);
-                  }
-               }
-
-               @Override
-               protected JsObject getValue()
-               {
-                  JsObject object = state_.<JsObject>cast().clone();
-                  return object;
-               }
-            };
+            setActive(event.getTarget());
          }
       });
 
@@ -274,7 +250,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
          activeColumn_ = column;
 
       if (updateState)
-         state_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
+         columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
       return column.getName();
    }
 
@@ -301,7 +277,6 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
          SourceColumn column = getByName(prevColumn);
          if (column == null)
             return;
-         column.setActiveEditor("");
          if (!hasActiveEditor())
          {
             Debug.logWarning("Setting to random editor.");
@@ -391,14 +366,14 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
       return hasActiveEditor() && activeColumn_.getActiveEditor() == editingTarget;
    }
 
-   // see if there are additional command pallette entries made available
+   // see if there are additional command pallette items made available
    // by the active editor
-   public List<CommandPaletteEntry> getCommandPaletteEntries()
+   public List<CommandPaletteItem> getCommandPaletteItems()
    {
       if (!hasActiveEditor())
          return null;
 
-      return activeColumn_.getActiveEditor().getCommandPaletteEntries();
+      return activeColumn_.getActiveEditor().getCommandPaletteItems();
    }
 
    public int getTabCount()
@@ -423,11 +398,12 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
 
    public ArrayList<Widget> getWidgets(boolean excludeMain)
    {
-      ArrayList<Widget> result = new ArrayList<>();
-      columnList_.forEach((column) -> {
+      ArrayList<Widget> result = new ArrayList<Widget>();
+      for (SourceColumn column : columnList_)
+      {
          if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
             result.add(column.asWidget());
-      });
+      }
       return result;
    }
 
@@ -849,6 +825,51 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
    }
 
    @Override
+   public void onSessionInit(SessionInitEvent event)
+   {
+      new JSObjectStateValue(
+         "source-column-manager",
+         "column-info",
+         ClientState.PROJECT_PERSISTENT,
+         session_.getSessionInfo().getClientState(),
+         false)
+      {
+         @Override
+         protected void onInit(JsObject value)
+         {
+            if (value == null)
+            {
+               columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
+               return;
+            }
+            columnState_ = value.cast();
+            ArrayList<String> names = getNames(false);
+            for (int i = 0;
+                 i < columnState_.getNames().length && getSize()< columnState_.getNames().length;
+                 i++)
+            {
+               String name = columnState_.getNames()[i];
+               if (getByName(name) == null)
+                  add(name, false);
+               else
+                  names.remove(name);
+            }
+         }
+
+         @Override
+         protected JsObject getValue()
+         {
+            if (columnState_ != null)
+               return columnState_.cast();
+
+            columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
+            JsObject object = columnState_.<JsObject>cast().clone();
+            return object;
+         }
+      };
+   }
+
+   @Override
    public void onSourceExtendedTypeDetected(SourceExtendedTypeDetectedEvent e)
    {
       // set the extended type of the specified source file
@@ -1125,16 +1146,23 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
    }
 
    // When dragging between columns/windows, we need to be specific about which column we're
-   // removing the document from as it may exist in more than one column.
+   // removing the document from as it may exist in more than one column. If the column is null,
+   // it is assumed that we are a satellite window and do now have multiple displays.
    public void disownDocOnDrag(String docId, SourceColumn column)
    {
-      column.cancelTabDrag();
+      if (column == null)
+      {
+         if (getSize() > 1)
+            Debug.logWarning("Warning: No column was provided to remove the doc from.");
+         column = getActive();
+      }
       column.closeDoc(docId);
+      column.cancelTabDrag();
    }
 
    public void selectTab(EditingTarget target)
    {
-      SourceColumn column = findByName(target.getId());
+      SourceColumn column = findByDocument(target.getId());
       column.ensureVisible(false);
       column.selectTab(target.asWidget());
    }
@@ -1329,7 +1357,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
 
    public void closeColumn(String name)
    {
-      SourceColumn column = findByName(name);
+      SourceColumn column = getByName(name);
       if (column.getTabCount() > 0)
          return;
       if (column == activeColumn_)
@@ -1657,7 +1685,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
 
    public void beforeShow(String name)
    {
-      SourceColumn column = findByName(name);
+      SourceColumn column = getByName(name);
       if (column == null)
       {
          Debug.logWarning("WARNING: Unknown column " + name);
@@ -1912,7 +1940,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
                      {
                         openNotebook(rmdFile, doc, resultCallback);
                      }
-   
+
                      @Override
                      public void onError(ServerError error)
                      {
@@ -2260,16 +2288,16 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
             }
          });
       }
-      
+
       if (completedCommand != null)
       {
          queue.addCommand(new SerializedCommand() {
-   
+
             public void onExecute(Command continuation)
             {
                completedCommand.execute();
                continuation.execute();
-            }  
+            }
          });
       }
    }
@@ -2314,7 +2342,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
       public final CommandWithArg<EditingTarget> executeOnSuccess;
    }
 
-   private State state_;
+   private State columnState_;
    private SourceColumn activeColumn_;
 
    private boolean openingForSourceNavigation_ = false;
@@ -2328,7 +2356,7 @@ public class SourceColumnManager implements SourceExtendedTypeDetectedEvent.Hand
    private final EventBus events_;
    private final Provider<FileMRUList> pMruList_;
    private final Provider<SourceWindowManager> pWindowManager_;
-   private final Session session_;
+   private Session session_;
    private final Synctex synctex_;
    private final UserPrefs userPrefs_;
    private final UserState userState_;

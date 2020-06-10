@@ -38,6 +38,13 @@
   height: 18px;
 }
 
+.pm-text-button {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 3px;
+  padding: 4px;
+}
+
 .pm-input-text,
 .pm-input-select {
   border-width: 1px;
@@ -46,7 +53,7 @@
 }
 
 .pm-input-select {
-  height: 20px;
+  height: 27px;
 }
 
 

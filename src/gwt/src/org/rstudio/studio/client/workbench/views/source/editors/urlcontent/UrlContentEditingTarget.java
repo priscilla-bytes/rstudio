@@ -33,13 +33,13 @@ import org.rstudio.core.client.events.EnsureHeightHandler;
 import org.rstudio.core.client.events.EnsureVisibleHandler;
 import org.rstudio.core.client.files.FileSystemContext;
 import org.rstudio.studio.client.application.events.EventBus;
-import org.rstudio.studio.client.application.ui.CommandPaletteEntry;
 import org.rstudio.studio.client.common.GlobalDisplay;
 import org.rstudio.studio.client.common.ReadOnlyValue;
 import org.rstudio.studio.client.common.Value;
 import org.rstudio.studio.client.common.filetypes.FileIcon;
 import org.rstudio.studio.client.common.filetypes.FileType;
 import org.rstudio.studio.client.common.filetypes.TextFileType;
+import org.rstudio.studio.client.palette.model.CommandPaletteItem;
 import org.rstudio.studio.client.server.ServerError;
 import org.rstudio.studio.client.server.ServerRequestCallback;
 import org.rstudio.studio.client.workbench.commands.Commands;
@@ -221,7 +221,6 @@ public class UrlContentEditingTarget implements EditingTarget
 
    public void popoutDoc()
    {
-      Debug.logToConsole("popoutDoc in URL");
       globalDisplay_.openWindow(getContentUrl());
    }
    
@@ -262,12 +261,6 @@ public class UrlContentEditingTarget implements EditingTarget
    @Override
    public void onInitiallyLoaded()
    {
-   }
-   
-   @Override
-   public List<CommandPaletteEntry> getCommandPaletteEntries()
-   {
-      return null;
    }
    
    @Override
@@ -470,6 +463,12 @@ public class UrlContentEditingTarget implements EditingTarget
    }
 
    public String getDefaultNamePrefix()
+   {
+      return null;
+   }
+
+   @Override
+   public List<CommandPaletteItem> getCommandPaletteItems()
    {
       return null;
    }

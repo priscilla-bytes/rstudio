@@ -64,7 +64,6 @@ import org.rstudio.studio.client.application.events.ChangeFontSizeEvent;
 import org.rstudio.studio.client.application.events.EventBus;
 import org.rstudio.studio.client.application.events.ResetEditorCommandsEvent;
 import org.rstudio.studio.client.application.events.SetEditorCommandBindingsEvent;
-import org.rstudio.studio.client.application.ui.CommandPaletteEntry;
 import org.rstudio.studio.client.common.*;
 import org.rstudio.studio.client.common.console.ConsoleProcess;
 import org.rstudio.studio.client.common.console.ProcessExitEvent;
@@ -92,6 +91,7 @@ import org.rstudio.studio.client.notebook.CompileNotebookOptions;
 import org.rstudio.studio.client.notebook.CompileNotebookOptionsDialog;
 import org.rstudio.studio.client.notebook.CompileNotebookPrefs;
 import org.rstudio.studio.client.notebook.CompileNotebookResult;
+import org.rstudio.studio.client.palette.model.CommandPaletteItem;
 import org.rstudio.studio.client.plumber.events.LaunchPlumberAPIEvent;
 import org.rstudio.studio.client.plumber.events.PlumberAPIStatusEvent;
 import org.rstudio.studio.client.plumber.model.PlumberAPIParams;
@@ -492,6 +492,7 @@ public class TextEditingTarget implements
                                          events_, 
                                          this);
 
+      EditingTarget target = this;
       docDisplay_.addKeyDownHandler(new KeyDownHandler()
       {
          public void onKeyDown(KeyDownEvent event)
@@ -594,10 +595,19 @@ public class TextEditingTarget implements
                String indent = docDisplay_.getNextLineIndent();
                docDisplay_.insertCode("\n" + indent);
             }
+            events_.fireEvent(new EditingTargetSelectedEvent(target));
          }
-
       });
-      
+
+      docDisplay_.addClickHandler(new ClickHandler()
+      {
+         @Override
+         public void onClick(ClickEvent event)
+         {
+            events_.fireEvent(new EditingTargetSelectedEvent(target));
+         }
+      });
+
       docDisplay_.addCommandClickHandler(new CommandClickEvent.Handler()
       {
          @Override
@@ -1580,14 +1590,6 @@ public class TextEditingTarget implements
                      return;
                   }
                   
-                  // don't try to set breakpoints if the R version is too old
-                  if (!session_.getSessionInfo().getHaveSrcrefAttribute())
-                  {
-                     view_.showWarningBar("Editor breakpoints require R 2.14 " +
-                                          "or newer.");
-                     return;
-                  }
-                  
                   Position breakpointPosition = 
                         Position.create(event.getLineNumber() - 1, 1);
                   
@@ -2261,14 +2263,16 @@ public class TextEditingTarget implements
    }
    
    @Override
-   public List<CommandPaletteEntry> getCommandPaletteEntries()
+   public List<CommandPaletteItem> getCommandPaletteItems()
    {
       if (visualMode_.isActivated())
-         return visualMode_.getCommandPaletteEntries();
+      {
+         return visualMode_.getCommandPaletteItems();
+      }
       else
          return null;
    }
-   
+
    @Override
    public boolean canCompilePdf()
    {
@@ -2519,7 +2523,7 @@ public class TextEditingTarget implements
 
       return false;
    }
-   
+
    public void save()
    {
       save(new Command() {
@@ -3689,9 +3693,9 @@ public class TextEditingTarget implements
             public void execute()
             {
                events_.fireEventToMainWindow(new DocWindowChangedEvent(
-                     getId(), SourceWindowManager.getSourceWindowId(), "",
-                     DocTabDragParams.create(getId(), currentPosition(), null),
-                     docUpdateSentinel_.getDoc().getCollabParams(), 0, -1));
+                  getId(), SourceWindowManager.getSourceWindowId(), "",
+                  DocTabDragParams.create(getId(), currentPosition()),
+                  docUpdateSentinel_.getDoc().getCollabParams(), 0, -1));
             }
          });
       }
@@ -4810,6 +4814,24 @@ public class TextEditingTarget implements
    
    private void onInsertChunk(String chunkPlaceholder, int rowOffset, int colOffset)
    {
+      // allow visual mode to handle
+      if (visualMode_.isActivated()) 
+      {
+         // strip off the leading backticks (if rowOffset is 0 then adjust colOffset)
+         chunkPlaceholder = chunkPlaceholder.replaceFirst("```", "");
+         if (rowOffset == 0)
+            colOffset -= 3;
+         
+         // strip off the trailing backticks
+         chunkPlaceholder = chunkPlaceholder.replaceAll("\\n```\\n$", "");  
+         
+         // do the insert
+         visualMode_.insertChunk(chunkPlaceholder, rowOffset, colOffset);
+         
+         // all done!
+         return;
+      }
+      
       String sel = "";
       Range selRange = null;
       
@@ -4960,7 +4982,7 @@ public class TextEditingTarget implements
       if (notebook_ != null) {
          Scope setupScope = notebook_.getSetupChunkScope();
 
-         if (setupScope == null)
+         if (setupScope == null && !visualMode_.isActivated())
          {
             onInsertChunk("```{r setup}\nlibrary(r2d3)\n```\n\n```{d3 data=}\n\n```\n", 4, 12);
          }

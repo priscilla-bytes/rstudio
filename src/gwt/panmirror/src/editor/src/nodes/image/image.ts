@@ -44,6 +44,7 @@ import { asHTMLTag } from '../../api/html';
 import { EditorOptions } from '../../api/options';
 import { EditorEvents } from '../../api/events';
 import { EditorFormat } from '../../api/format';
+import { OmniInsertGroup } from '../../api/omni_insert';
 
 import { imageDialog } from './image-dialog';
 import { imageDimensionsFromImg, imageContainerWidth, inlineHTMLIsImage } from './image-util';
@@ -110,7 +111,14 @@ const extension = (
     ],
 
     commands: (_schema: Schema) => {
-      return [new ProsemirrorCommand(EditorCommandId.Image, ['Shift-Mod-i'], imageCommand(ui, imageAttr))];
+      return [
+        new ProsemirrorCommand(
+          EditorCommandId.Image,
+          ['Shift-Mod-i'],
+          imageCommand(ui, imageAttr),
+          imageOmniInsert(ui),
+        ),
+      ];
     },
 
     plugins: (schema: Schema) => {
@@ -320,6 +328,16 @@ export function imageCommand(editorUI: EditorUI, imageAttributes: boolean) {
     }
 
     return true;
+  };
+}
+
+function imageOmniInsert(ui: EditorUI) {
+  return {
+    name: ui.context.translateText('Image...'),
+    description: ui.context.translateText('Figure or inline image'),
+    group: OmniInsertGroup.Content,
+    priority: 10,
+    image: () => (ui.prefs.darkMode() ? ui.images.omni_insert?.image_dark! : ui.images.omni_insert?.image!),
   };
 }
 

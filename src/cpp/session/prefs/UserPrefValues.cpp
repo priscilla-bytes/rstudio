@@ -37,7 +37,7 @@ core::Error UserPrefValues::setRunRprofileOnResume(bool val)
 }
 
 /**
- * Whether to save the workspace after the R session ends.
+ * Whether to save the workspace to an .Rdata file after the R session ends.
  */
 std::string UserPrefValues::saveWorkspace()
 {
@@ -804,7 +804,7 @@ core::Error UserPrefValues::setStripTrailingWhitespace(bool val)
 }
 
 /**
- * Whether to save the position of the cursor when a fille is closed, restore it when the file is opened.
+ * Whether to save the position of the cursor when a file is closed, restore it when the file is opened.
  */
 bool UserPrefValues::restoreSourceDocumentCursorPosition()
 {
@@ -918,6 +918,19 @@ bool UserPrefValues::syntaxColorConsole()
 core::Error UserPrefValues::setSyntaxColorConsole(bool val)
 {
    return writePref("syntax_color_console", val);
+}
+
+/**
+ * Whether to display error, warning, and message output in a different color.
+ */
+bool UserPrefValues::highlightConsoleErrors()
+{
+   return readPref<bool>("highlight_console_errors");
+}
+
+core::Error UserPrefValues::setHighlightConsoleErrors(bool val)
+{
+   return writePref("highlight_console_errors", val);
 }
 
 /**
@@ -2494,6 +2507,19 @@ core::Error UserPrefValues::setVisualMarkdownEditingFontSizePoints(int val)
 }
 
 /**
+ * Preferred emoji skintone
+ */
+std::string UserPrefValues::emojiSkintone()
+{
+   return readPref<std::string>("emoji_skintone");
+}
+
+core::Error UserPrefValues::setEmojiSkintone(std::string val)
+{
+   return writePref("emoji_skintone", val);
+}
+
+/**
  * List of aria-live announcements to disable.
  */
 core::json::Array UserPrefValues::disabledAriaLiveAnnouncements()
@@ -2656,6 +2682,7 @@ std::vector<std::string> UserPrefValues::allKeys()
       kFoldStyle,
       kSaveBeforeSourcing,
       kSyntaxColorConsole,
+      kHighlightConsoleErrors,
       kScrollPastEndOfDocument,
       kHighlightRFunctionCalls,
       kConsoleLineLengthLimit,
@@ -2777,6 +2804,7 @@ std::vector<std::string> UserPrefValues::allKeys()
       kVisualMarkdownEditingMaxContentWidth,
       kVisualMarkdownEditingShowDocOutline,
       kVisualMarkdownEditingFontSizePoints,
+      kEmojiSkintone,
       kDisabledAriaLiveAnnouncements,
       kScreenreaderConsoleAnnounceLimit,
       kFileMonitorIgnoredComponents,
