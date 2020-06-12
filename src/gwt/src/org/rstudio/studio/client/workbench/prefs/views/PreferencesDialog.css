@@ -33,7 +33,7 @@
 
 .paneLayoutTable td.paneLayoutTable {
    background-color: white;
-   height: 200px;
+   height: 180px;
    vertical-align: top;
    padding: 0px;
    border: none;
@@ -57,10 +57,12 @@
    display: block;
    margin: 0 0 0 2px;
    max-height: 18px;
+   width: 95px;
    font-size: 11px;
 }
 
 .paneLayoutTable select {
+   width: 195px;
    margin-bottom: 5px;
 }
 

@@ -111,7 +111,6 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          {
             CheckBox checkBox = new CheckBox(module, false);
             checkBox.addValueChangeHandler(this);
-            checkBox.setWidth(width);
             checkBoxes_.add(checkBox);
             flowPanel.add(checkBox);
             if (module == "Presentation")
@@ -333,29 +332,24 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       int tableWidth = 375;
 
       // cells will be twice a wide as columns to preserve space (only cells have checkboxes)
-      Debug.logToConsole("additionalColumnCount_: " + additionalColumnCount_);
       double columnCount = additionalColumnCount_ + 4;
-      Debug.logToConsole("columnCount: "  + columnCount);
-
       double columnWidthValue = (double)tableWidth / columnCount;
       double cellWidthValue = columnWidthValue * 2;
-      Debug.logToConsole("initial cellWidthValue: " + cellWidthValue);
-      Debug.logToConsole("initial columnWidthValue: " + columnWidthValue);
 
-      // We never need more than 42 px for a column, so if we have extra, give it back to the cells
-      if (Math.min(columnWidthValue, 42) != columnWidthValue)
+      // We never need more than MAX_COLUMN_WITH for a column, so if we have extra, give it back to
+      // the cells
+      if (Math.min(columnWidthValue, MAX_COLUMN_WIDTH) != columnWidthValue)
       {
-         double extra = columnWidthValue - 42;
-         cellWidthValue += extra / 2;
-         columnWidthValue = 42;
+         double extra = columnWidthValue - MAX_COLUMN_WIDTH;
+         cellWidthValue += extra;
+         columnWidthValue = MAX_COLUMN_WIDTH;
       }
 
-      cellWidthValue -= GRID_CELL_SPACING;
-      columnWidthValue -= GRID_CELL_SPACING;
-      Debug.logToConsole("final cellWidthValue: " + cellWidthValue);
-      Debug.logToConsole("final columnWidthValue: " + columnWidthValue);
-      String columnWidth = columnWidthValue + "px";
-      String cellWidth = cellWidthValue + "px";
+      double debugVariable = (columnWidthValue * additionalColumnCount_) + (cellWidthValue * 2);
+      cellWidthValue -= GRID_CELL_SPACING - GRID_CELL_PADDING;
+      columnWidthValue -= GRID_CELL_SPACING - GRID_CELL_PADDING;
+      final String columnWidth = columnWidthValue + "px";
+      final String cellWidth = cellWidthValue + "px";
 
       leftTop_.setWidth(cellWidth);
       leftBottom_.setWidth(cellWidth);
@@ -369,7 +363,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          grid_.addStyleName(res_.styles().newSection());
          grid_.addStyleName(res_.styles().paneLayoutTable());
          grid_.setCellSpacing(GRID_CELL_SPACING);
-         grid_.setCellPadding(6);
+         grid_.setCellPadding(GRID_CELL_PADDING);
 
          // the two rows have different columns because the source columns only use one row
          int topColumn;
@@ -405,13 +399,15 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       leftBottomPanel_.setWidth(cellWidth);
       rightTopPanel_.setWidth(cellWidth);
       rightBottomPanel_.setWidth(cellWidth);
+
       int topColumn = lastKnownAdditionalColumnCount_;
+      int bottomColumn = 0;
 
       grid_.getCellFormatter().setWidth(0, topColumn, cellWidth);
-      grid_.getCellFormatter().setWidth(1, topColumn, cellWidth);
-
       grid_.getCellFormatter().setWidth(0, ++topColumn, cellWidth);
-      grid_.getCellFormatter().setWidth(1, ++topColumn, cellWidth);
+
+      grid_.getCellFormatter().setWidth(1, bottomColumn, cellWidth);
+      grid_.getCellFormatter().setWidth(1, ++bottomColumn, cellWidth);
 
       int difference = additionalColumnCount_ - lastKnownAdditionalColumnCount_;
       lastKnownAdditionalColumnCount_ = additionalColumnCount_;
@@ -438,8 +434,13 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
       // update the width
       for (int i = 0; i < additionalColumnCount_; i++)
+      {
+         //visibleColumns_.get(i).setWidth(columnWidth);
          grid_.getCellFormatter().setWidth(0, i, columnWidth);
+      }
 
+      tabSet1ModuleList_.setWidth(cellWidth);
+      tabSet2ModuleList_.setWidth(cellWidth);
       return cellWidth;
    }
 
@@ -456,11 +457,11 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       label.setText(UserPrefsAccessor.Panes.QUADRANTS_SOURCE);
       // !!! Roles.getTextboxRole().setAriaLabelProperty(tb.getElement(), "Additional source
       // column");
-      label.setWidth(width);
+      //label.setWidth(width);
 
       ScrollPanel sp = new ScrollPanel();
       sp.add(label);
-      sp.setWidth(width);
+      //sp.setWidth(width);
 
       return sp;
    }
@@ -612,4 +613,6 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    private FlexTable grid_;
 
    private final static int GRID_CELL_SPACING = 8;
+   private final static int GRID_CELL_PADDING = 6;
+   private final static int MAX_COLUMN_WIDTH = 50;
 }
