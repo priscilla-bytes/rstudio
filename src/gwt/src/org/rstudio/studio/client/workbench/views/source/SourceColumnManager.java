@@ -18,8 +18,6 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayString;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.Command;
@@ -57,8 +55,6 @@ import org.rstudio.studio.client.server.ServerRequestCallback;
 import org.rstudio.studio.client.server.VoidServerRequestCallback;
 import org.rstudio.studio.client.workbench.FileMRUList;
 import org.rstudio.studio.client.workbench.commands.Commands;
-import org.rstudio.studio.client.workbench.events.SessionInitEvent;
-import org.rstudio.studio.client.workbench.events.SessionInitHandler;
 import org.rstudio.studio.client.workbench.model.ClientState;
 import org.rstudio.studio.client.workbench.model.Session;
 import org.rstudio.studio.client.workbench.model.UnsavedChangesTarget;
@@ -90,8 +86,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Singleton
-public class SourceColumnManager implements SessionInitHandler,
-                                            CommandPaletteEntrySource,
+public class SourceColumnManager implements CommandPaletteEntrySource,
                                             SourceExtendedTypeDetectedEvent.Handler,
                                             DebugModeChangedEvent.Handler
 {
@@ -163,16 +158,8 @@ public class SourceColumnManager implements SessionInitHandler,
 
       events_.addHandler(SourceExtendedTypeDetectedEvent.TYPE, this);
       events_.addHandler(DebugModeChangedEvent.TYPE, this);
-      events_.addHandler(SessionInitEvent.TYPE,this);
 
-      events_.addHandler(EditingTargetSelectedEvent.TYPE, new EditingTargetSelectedEvent.Handler()
-      {
-         @Override
-         public void onEditingTargetSelected(EditingTargetSelectedEvent event)
-         {
-            setActive(event.getTarget());
-         }
-      });
+      events_.addHandler(EditingTargetSelectedEvent.TYPE, event -> setActive(event.getTarget()));
 
       events_.addHandler(SourceFileSavedEvent.TYPE, new SourceFileSavedHandler()
       {
@@ -190,16 +177,38 @@ public class SourceColumnManager implements SessionInitHandler,
          }
       });
 
-      sourceNavigationHistory_.addChangeHandler(new ChangeHandler()
+      sourceNavigationHistory_.addChangeHandler(event -> columnList_.forEach((column1) ->
+         column1.manageSourceNavigationCommands()));
+
+      new JSObjectStateValue("source-column-manager",
+                             "column-info",
+                              ClientState.PERSISTENT,
+                              session_.getSessionInfo().getClientState(),
+                              false)
       {
+         @Override
+         protected void onInit(JsObject value)
+         {
+            if (value == null)
+            {
+               columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
+               return;
+            }
+            columnState_ = value.cast();
+            for (int i = 0; i < columnState_.getNames().length; i++)
+            {
+               String name = columnState_.getNames()[i];
+               if (!StringUtil.equals(name, MAIN_SOURCE_NAME))
+                  add(name, false);
+            }
+         }
 
          @Override
-         public void onChange(ChangeEvent event)
+         protected JsObject getValue()
          {
-            columnList_.forEach((column) ->
-               column.manageSourceNavigationCommands());
+            return columnState_.cast();
          }
-      });
+      };
    }
 
    public String add()
@@ -366,7 +375,7 @@ public class SourceColumnManager implements SessionInitHandler,
       return hasActiveEditor() && activeColumn_.getActiveEditor() == editingTarget;
    }
 
-   // see if there are additional command pallette items made available
+   // see if there are additional command palette items made available
    // by the active editor
    public List<CommandPaletteItem> getCommandPaletteItems()
    {
@@ -398,7 +407,7 @@ public class SourceColumnManager implements SessionInitHandler,
 
    public ArrayList<Widget> getWidgets(boolean excludeMain)
    {
-      ArrayList<Widget> result = new ArrayList<Widget>();
+      ArrayList<Widget> result = new ArrayList<>();
       for (SourceColumn column : columnList_)
       {
          if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
@@ -825,51 +834,6 @@ public class SourceColumnManager implements SessionInitHandler,
    }
 
    @Override
-   public void onSessionInit(SessionInitEvent event)
-   {
-      new JSObjectStateValue(
-         "source-column-manager",
-         "column-info",
-         ClientState.PROJECT_PERSISTENT,
-         session_.getSessionInfo().getClientState(),
-         false)
-      {
-         @Override
-         protected void onInit(JsObject value)
-         {
-            if (value == null)
-            {
-               columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
-               return;
-            }
-            columnState_ = value.cast();
-            ArrayList<String> names = getNames(false);
-            for (int i = 0;
-                 i < columnState_.getNames().length && getSize()< columnState_.getNames().length;
-                 i++)
-            {
-               String name = columnState_.getNames()[i];
-               if (getByName(name) == null)
-                  add(name, false);
-               else
-                  names.remove(name);
-            }
-         }
-
-         @Override
-         protected JsObject getValue()
-         {
-            if (columnState_ != null)
-               return columnState_.cast();
-
-            columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
-            JsObject object = columnState_.<JsObject>cast().clone();
-            return object;
-         }
-      };
-   }
-
-   @Override
    public void onSourceExtendedTypeDetected(SourceExtendedTypeDetectedEvent e)
    {
       // set the extended type of the specified source file
@@ -1197,27 +1161,31 @@ public class SourceColumnManager implements SessionInitHandler,
 
    public void closeAllTabs(boolean excludeActive, boolean excludeMain)
    {
-      columnList_.forEach((column) -> {
-         if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
-         {
-            cpsExecuteForEachEditor(column.getEditors(),
-               new CPSEditingTargetCommand()
+      columnList_.forEach((column) -> closeAllTabs(column, excludeActive, excludeMain));
+   }
+
+   public void closeAllTabs(SourceColumn column, boolean excludeActive, boolean excludeMain)
+   {
+      if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
+      {
+         cpsExecuteForEachEditor(column.getEditors(),
+            new CPSEditingTargetCommand()
+            {
+               @Override
+               public void execute(EditingTarget target, Command continuation)
                {
-                  @Override
-                  public void execute(EditingTarget target, Command continuation)
+                  if (excludeActive && target == activeColumn_.getActiveEditor())
                   {
-                     if (excludeActive && target == activeColumn_.getActiveEditor())
-                     {
-                        continuation.execute();
-                        return;
-                     } else
-                     {
-                        column.closeTab(target.asWidget(), false, continuation);
-                     }
+                     continuation.execute();
+                     return;
                   }
-               });
-         }
-      });
+                  else
+                  {
+                     column.closeTab(target.asWidget(), false, continuation);
+                  }
+               }
+            });
+      }
    }
 
    void closeSourceDoc(boolean interactive)
@@ -1274,6 +1242,7 @@ public class SourceColumnManager implements SessionInitHandler,
    }
 
    public void closeAllLocalSourceDocs(String caption,
+                                       SourceColumn sourceColumn,
                                        Command onCompleted,
                                        final boolean excludeActive)
    {
@@ -1283,16 +1252,22 @@ public class SourceColumnManager implements SessionInitHandler,
 
       // collect up a list of dirty documents
       ArrayList<EditingTarget> dirtyTargets = new ArrayList<>();
-      columnList_.forEach((column) ->
-          dirtyTargets.addAll(column.getDirtyEditors(excludeEditor)));
+      // if sourceColumn is not provided, assume we are closing editors for every column
+      if (sourceColumn == null)
+         columnList_.forEach((column) ->
+           dirtyTargets.addAll(column.getDirtyEditors(excludeEditor)));
+      else
+         dirtyTargets.addAll(sourceColumn.getDirtyEditors(excludeEditor));
 
       // create a command used to close all tabs
-      final Command closeAllTabsCommand = () -> closeAllTabs(excludeActive, false);
+      final Command closeAllTabsCommand = sourceColumn == null ?
+                                          () -> closeAllTabs(excludeActive, false) :
+                                          () -> closeAllTabs(sourceColumn, excludeActive, false);
 
       saveEditingTargetsWithPrompt(caption,
          dirtyTargets,
          CommandUtil.join(closeAllTabsCommand,
-            onCompleted),
+                          onCompleted),
          null);
    }
 
@@ -1324,8 +1299,7 @@ public class SourceColumnManager implements SessionInitHandler,
          if (!StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
          {
             moveEditors.addAll(column.getEditors());
-            column.closeAllLocalSourceDocs();
-            closeColumn(column.getName());
+            closeAllLocalSourceDocs("Close All", column, null, false);
             if (columnList_.size() >= num || num == 1)
                break;
          }
@@ -2082,8 +2056,7 @@ public class SourceColumnManager implements SessionInitHandler,
       {
          // convert to UnsavedChangesTarget collection
          ArrayList<UnsavedChangesTarget> unsavedTargets =
-            new ArrayList<UnsavedChangesTarget>();
-         unsavedTargets.addAll(editingTargets);
+            new ArrayList<>(editingTargets);
 
          // show dialog
          showUnsavedChangesDialog(

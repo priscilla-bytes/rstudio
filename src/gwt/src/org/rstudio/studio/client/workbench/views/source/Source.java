@@ -498,13 +498,6 @@ public class Source implements InsertSourceHandler,
 
       initialized_ = true;
 
-      // !!! comment why this is needed
-      events_.fireEvent(new DocTabsChangedEvent(null,
-                                                new String[0],
-                                                new FileIcon[0],
-                                                new String[0],
-                                                new String[0]));
-
       // fake shortcuts for commands_ which we handle at a lower level
       commands_.goToHelp().setShortcut(new KeyboardShortcut("F1", KeyCodes.KEY_F1, KeyboardShortcut.NONE));
       commands_.goToDefinition().setShortcut(new KeyboardShortcut("F2", KeyCodes.KEY_F2, KeyboardShortcut.NONE));
@@ -1540,7 +1533,7 @@ public class Source implements InsertSourceHandler,
             @Override
             public void execute()
             {
-               columnManager_.closeAllLocalSourceDocs(caption, onCompleted, excludeActive);
+               columnManager_.closeAllLocalSourceDocs(caption, null, onCompleted, excludeActive);
             }
          });
       }
@@ -1548,7 +1541,7 @@ public class Source implements InsertSourceHandler,
       {
          // this is a satellite (or we don't need to query satellites)--just
          // close our own tabs
-         columnManager_.closeAllLocalSourceDocs(caption, onCompleted, excludeActive);
+         columnManager_.closeAllLocalSourceDocs(caption, null, onCompleted, excludeActive);
       }
    }
 
