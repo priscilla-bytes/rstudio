@@ -177,8 +177,8 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
          }
       });
 
-      sourceNavigationHistory_.addChangeHandler(event -> columnList_.forEach((column1) ->
-         column1.manageSourceNavigationCommands()));
+      sourceNavigationHistory_.addChangeHandler(event -> columnList_.forEach((col) ->
+         col.manageSourceNavigationCommands()));
 
       new JSObjectStateValue("source-column-manager",
                              "column-info",
@@ -256,7 +256,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       columnList_.add(column);
 
       if (activate || activeColumn_ == null)
-         activeColumn_ = column;
+         setActive(column);
 
       if (updateState)
          columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
@@ -272,27 +272,29 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
    {
       if (StringUtil.isNullOrEmpty(name))
       {
-         activeColumn_.setActiveEditor("");
+         if (activeColumn_ != null)
+            activeColumn_.setActiveEditor("");
          activeColumn_ = null;
          return;
       }
+      setActive(findByName(name));
+   }
 
-      String prevColumn = activeColumn_ == null ? "" : activeColumn_.getName();
-      activeColumn_ = getByName(name);
+   public void setActive(SourceColumn column)
+   {
+      SourceColumn prevColumn = activeColumn_;
+      activeColumn_ = column;
 
       // If the active column changed, we need to update the active editor
-      if (!StringUtil.isNullOrEmpty(prevColumn) && !StringUtil.equals(name, prevColumn))
+      if (prevColumn != null && prevColumn != activeColumn_)
       {
-         SourceColumn column = getByName(prevColumn);
-         if (column == null)
-            return;
+         prevColumn.setActiveEditor("");
          if (!hasActiveEditor())
-         {
-            Debug.logWarning("Setting to random editor.");
-            column.setActiveEditor();
-         }
+            activeColumn_.setActiveEditor();
+         manageCommands(true);
       }
    }
+
 
    public void setActive(EditingTarget target)
    {
@@ -1329,9 +1331,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
          if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
             closeColumn(column, force);
       }
-      Debug.logToConsole("closed all columns, new size: " + getSize());
-      assert getSize() <= 1;
-   }
+  }
 
    public void closeColumn(String name, boolean force)
    {
