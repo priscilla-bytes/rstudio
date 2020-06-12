@@ -36,10 +36,10 @@
    height: 200px;
    vertical-align: top;
    padding: 0px;
-  border: none;
-  -moz-border-radius: 6px;
-  -webkit-border-radius: 6px;
-  border-radius: 6px;
+   border: none;
+   -moz-border-radius: 6px;
+   -webkit-border-radius: 6px;
+   border-radius: 6px;
 }
 
 .column {

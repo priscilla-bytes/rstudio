@@ -192,9 +192,9 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       add(new Label("Choose the layout of the panes in RStudio by selecting from the controls in each quadrant.", true));
 
       // temporary check for enabling additional columns feature
+      additionalColumnCount_ = userPrefs.panes().getGlobalValue().getAdditionalSourceColumns();
       if (userPrefs.enableAdditionalColumns().getGlobalValue())
       {
-         additionalColumnCount_ = userPrefs.panes().getGlobalValue().getAdditionalSourceColumns();
          // !!! temporary debugging call
          paneManager_.syncAdditionalColumnCount(additionalColumnCount_);
          addSource_ = new ImageButton("Add source", res_.iconAddSourcePane2x());
@@ -330,14 +330,30 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       if (grid_ != null && lastKnownAdditionalColumnCount_ == additionalColumnCount_)
          return "";
 
-      int tableWidth = 420;
+      int tableWidth = 375;
 
       // cells will be twice a wide as columns to preserve space (only cells have checkboxes)
       Debug.logToConsole("additionalColumnCount_: " + additionalColumnCount_);
-      int columnCount = (additionalColumnCount_ / 2) + 2;
-      Debug.logToConsole("additionalColumnCount_: " + additionalColumnCount_);
-      double cellWidthValue = (double)tableWidth / columnCount;
-      double columnWidthValue = cellWidthValue / 2;
+      double columnCount = additionalColumnCount_ + 4;
+      Debug.logToConsole("columnCount: "  + columnCount);
+
+      double columnWidthValue = (double)tableWidth / columnCount;
+      double cellWidthValue = columnWidthValue * 2;
+      Debug.logToConsole("initial cellWidthValue: " + cellWidthValue);
+      Debug.logToConsole("initial columnWidthValue: " + columnWidthValue);
+
+      // We never need more than 42 px for a column, so if we have extra, give it back to the cells
+      if (Math.min(columnWidthValue, 42) != columnWidthValue)
+      {
+         double extra = columnWidthValue - 42;
+         cellWidthValue += extra / 2;
+         columnWidthValue = 42;
+      }
+
+      cellWidthValue -= GRID_CELL_SPACING;
+      columnWidthValue -= GRID_CELL_SPACING;
+      Debug.logToConsole("final cellWidthValue: " + cellWidthValue);
+      Debug.logToConsole("final columnWidthValue: " + columnWidthValue);
       String columnWidth = columnWidthValue + "px";
       String cellWidth = cellWidthValue + "px";
 
@@ -352,7 +368,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          grid_ = new FlexTable();
          grid_.addStyleName(res_.styles().newSection());
          grid_.addStyleName(res_.styles().paneLayoutTable());
-         grid_.setCellSpacing(8);
+         grid_.setCellSpacing(GRID_CELL_SPACING);
          grid_.setCellPadding(6);
 
          // the two rows have different columns because the source columns only use one row
@@ -360,9 +376,9 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          int bottomColumn = 0;
          for (topColumn = 0; topColumn < additionalColumnCount_; topColumn++)
          {
-            VerticalPanel vp = createColumn(columnWidth);
-            visibleColumns_.add(vp);
-            grid_.setWidget(0, topColumn, vp);
+            ScrollPanel sp = createColumn(columnWidth);
+            visibleColumns_.add(sp);
+            grid_.setWidget(0, topColumn, sp);
             grid_.getFlexCellFormatter().setRowSpan(0, topColumn, 2);
             grid_.getCellFormatter().setStyleName(0, topColumn, res_.styles().column());
             grid_.getColumnFormatter().setWidth(topColumn, columnWidth);
@@ -389,30 +405,40 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       leftBottomPanel_.setWidth(cellWidth);
       rightTopPanel_.setWidth(cellWidth);
       rightBottomPanel_.setWidth(cellWidth);
+      int topColumn = lastKnownAdditionalColumnCount_;
+
+      grid_.getCellFormatter().setWidth(0, topColumn, cellWidth);
+      grid_.getCellFormatter().setWidth(1, topColumn, cellWidth);
+
+      grid_.getCellFormatter().setWidth(0, ++topColumn, cellWidth);
+      grid_.getCellFormatter().setWidth(1, ++topColumn, cellWidth);
 
       int difference = additionalColumnCount_ - lastKnownAdditionalColumnCount_;
       lastKnownAdditionalColumnCount_ = additionalColumnCount_;
 
       // when the number of columns has decreased, remove some
       for (int i = 0; i > difference && !visibleColumns_.isEmpty(); difference++)
+      {
          visibleColumns_.remove(0);
+         grid_.removeCell(0, i);
+      }
 
       // when the number of columns has increased, add some
       for (int i = 0; i < difference; i++)
       {
          grid_.insertCell(0, 0);
 
-         VerticalPanel vp = createColumn(columnWidth);
-         visibleColumns_.add(vp);
+         ScrollPanel sp = createColumn(columnWidth);
+         visibleColumns_.add(sp);
 
-         grid_.setWidget(0, 0, vp);
+         grid_.setWidget(0, 0, sp);
          grid_.getFlexCellFormatter().setRowSpan(0, 0, 2);
          grid_.getCellFormatter().setStyleName(0, 0, res_.styles().column());
       }
 
       // update the width
-      for (VerticalPanel panel : visibleColumns_)
-         panel.setWidth(columnWidth);
+      for (int i = 0; i < additionalColumnCount_; i++)
+         grid_.getCellFormatter().setWidth(0, i, columnWidth);
 
       return cellWidth;
    }
@@ -424,7 +450,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       return vp;
    }
 
-   private VerticalPanel createColumn(String width)
+   private ScrollPanel createColumn(String width)
    {
       FormLabel label = new FormLabel();
       label.setText(UserPrefsAccessor.Panes.QUADRANTS_SOURCE);
@@ -432,10 +458,11 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       // column");
       label.setWidth(width);
 
-      VerticalPanel vp = new VerticalPanel();
-      vp.add(label);
+      ScrollPanel sp = new ScrollPanel();
+      sp.add(label);
+      sp.setWidth(width);
 
-      return vp;
+      return sp;
    }
 
    private static boolean selectByValue(ListBox listBox, String value)
@@ -567,7 +594,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    private final ListBox rightTop_;
    private final ListBox rightBottom_;
    private final ListBox[] visiblePanes_;
-   private final List<VerticalPanel> visibleColumns_ = new ArrayList<>();
+   private final List<ScrollPanel> visibleColumns_ = new ArrayList<>();
    private final VerticalPanel[] visiblePanePanels_;
    private final ModuleList tabSet1ModuleList_;
    private final ModuleList tabSet2ModuleList_;
@@ -583,4 +610,6 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
    private int additionalColumnCount_;
    private int lastKnownAdditionalColumnCount_ = 0;
    private FlexTable grid_;
+
+   private final static int GRID_CELL_SPACING = 8;
 }

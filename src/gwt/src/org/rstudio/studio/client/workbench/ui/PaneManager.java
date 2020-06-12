@@ -1193,7 +1193,7 @@ public class PaneManager
 
    public int closeAllAdditionalColumns()
    {
-      sourceColumnManager_.closeAllColumns();
+      sourceColumnManager_.closeAllColumns(true, true);
       additionalSourceCount_ = sourceColumnManager_.getSize() - 1;
       if (additionalSourceCount_ > 0)
          Debug.logWarning("Could not close all additional columns. Columns may contain open tabs.");
@@ -1225,10 +1225,11 @@ public class PaneManager
          if (column.getTabCount() == 0)
          {
             panel_.removeLeftWidget(column.asWidget());
-            sourceColumnManager_.closeColumn(name);
+            sourceColumnManager_.closeColumn(column, true);
             panesByName_.remove(name);
 
             additionalSourceCount_ = sourceColumnManager_.getSize() - 1;
+            panel_.resetLeftWidgets(sourceColumnManager_.getWidgets(true));
             PaneConfig paneConfig = getCurrentConfig();
             userPrefs_.panes().setGlobalValue(PaneConfig.create(
                JsArrayUtil.copy(paneConfig.getQuadrants()),

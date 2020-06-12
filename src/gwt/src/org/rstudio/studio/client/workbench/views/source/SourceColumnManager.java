@@ -1322,22 +1322,32 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       return result;
    }
 
-   public void closeAllColumns()
+   public void closeAllColumns(boolean excludeMain, boolean force)
    {
-      columnList_.forEach((column) -> closeColumn(column.getName()));
+      for (SourceColumn column : columnList_)
+      {
+         if (!excludeMain || !StringUtil.equals(column.getName(), MAIN_SOURCE_NAME))
+            closeColumn(column, force);
+      }
       Debug.logToConsole("closed all columns, new size: " + getSize());
-      assert getSize() == 0;
+      assert getSize() <= 1;
    }
 
-   public void closeColumn(String name)
+   public void closeColumn(String name, boolean force)
    {
       SourceColumn column = getByName(name);
-      if (column.getTabCount() > 0)
+      if (column != null)
+         closeColumn(column, force);
+   }
+
+   public void closeColumn(SourceColumn column, boolean force)
+   {
+      if (!force && column.getTabCount() > 0)
          return;
+
       if (column == activeColumn_)
          setActive("");
-
-      columnList_.remove(getByName(name));
+      columnList_.remove(column);
    }
 
    public void ensureVisible(boolean newTabPending)
