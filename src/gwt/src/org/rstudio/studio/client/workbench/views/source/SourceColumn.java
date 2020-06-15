@@ -95,9 +95,6 @@ public class SourceColumn implements SelectionHandler<Integer>,
       editingTargetSource_ = editingTargetSource;
       fileContext_ = fileContext;
       server_ = sourceServerOperations;
-
-
-      initialized_ = true;
    }
 
    public void loadDisplay(String name,
@@ -121,6 +118,12 @@ public class SourceColumn implements SelectionHandler<Integer>,
       boolean isActive = this == manager_.getActive();
       events_.addHandler(SourceOnSaveChangedEvent.TYPE, event -> manageSaveCommands(isActive));
       events_.addHandler(SynctexStatusChangedEvent.TYPE, event -> manageSynctexCommands(isActive));
+      initialized_ = true;
+   }
+
+   public boolean isInitialized()
+   {
+      return initialized_;
    }
 
    public String getName()
@@ -298,7 +301,6 @@ public class SourceColumn implements SelectionHandler<Integer>,
        activeEditor_ = target;
        if (activeEditor_ != null)
           activeEditor_.onActivate();
-       manageCommands();
    }
 
    void setActiveEditor()
@@ -650,6 +652,9 @@ public class SourceColumn implements SelectionHandler<Integer>,
 
    public void manageCommands(boolean forceSync)
    {
+      if (manager_ == null)
+         return;
+
       boolean isActive = this == manager_.getActive();
       boolean hasDocs = isActive && hasDoc();
 
@@ -1065,7 +1070,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
          }
       }
 
-      manageCommands();
+      manageCommands(true);
    }
 
    @Override
@@ -1194,7 +1199,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
 
    private Commands commands_;
 
-   private boolean initialized_;
+   private boolean initialized_ = false;
    private boolean suspendDocumentClose_ = false;
 
    // If positive, a new tab is about to be created

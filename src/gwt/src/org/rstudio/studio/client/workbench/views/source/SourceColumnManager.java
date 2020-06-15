@@ -159,7 +159,15 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       events_.addHandler(SourceExtendedTypeDetectedEvent.TYPE, this);
       events_.addHandler(DebugModeChangedEvent.TYPE, this);
 
-      events_.addHandler(EditingTargetSelectedEvent.TYPE, event -> setActive(event.getTarget()));
+      events_.addHandler(EditingTargetSelectedEvent.TYPE,
+         new EditingTargetSelectedEvent.Handler()
+         {
+            @Override
+            public void onEditingTargetSelected(EditingTargetSelectedEvent event)
+            {
+               setActive(event.getTarget());
+            }
+         });
 
       events_.addHandler(SourceFileSavedEvent.TYPE, new SourceFileSavedHandler()
       {
@@ -280,6 +288,12 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       setActive(findByName(name));
    }
 
+   public void setActive(EditingTarget target)
+   {
+      setActive(findByDocument(target.getId()));
+      activeColumn_.setActiveEditor(target);
+   }
+
    public void setActive(SourceColumn column)
    {
       SourceColumn prevColumn = null;
@@ -293,15 +307,10 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
          prevColumn.setActiveEditor("");
          if (!hasActiveEditor())
             activeColumn_.setActiveEditor();
-         manageCommands(true);
       }
-   }
 
-
-   public void setActive(EditingTarget target)
-   {
-      activeColumn_ = findByDocument(target.getId());
-      activeColumn_.setActiveEditor(target);
+      if (prevColumn == null || prevColumn != activeColumn_)
+         manageCommands(true);
    }
 
    public void setActiveDocId(String docId)
@@ -491,7 +500,10 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
 
    public void manageCommands(boolean forceSync)
    {
-      columnList_.forEach((column) -> column.manageCommands(forceSync));
+      columnList_.forEach((column) -> {
+         if (column.isInitialized())
+            column.manageCommands(forceSync);
+      });
    }
 
    public EditingTarget addTab(SourceDocument doc, int mode, SourceColumn column)
