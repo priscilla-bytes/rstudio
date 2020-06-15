@@ -121,7 +121,6 @@ public class SourceColumn implements SelectionHandler<Integer>,
       boolean isActive = this == manager_.getActive();
       events_.addHandler(SourceOnSaveChangedEvent.TYPE, event -> manageSaveCommands(isActive));
       events_.addHandler(SynctexStatusChangedEvent.TYPE, event -> manageSynctexCommands(isActive));
-
    }
 
    public String getName()

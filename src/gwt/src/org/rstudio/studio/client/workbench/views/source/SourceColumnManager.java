@@ -133,9 +133,9 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
                               Provider<SourceWindowManager> pWindowManager)
    {
       SourceColumn column = GWT.create(SourceColumn.class);
-      column.loadDisplay(MAIN_SOURCE_NAME, display, this);
       columnList_.add(column);
       setActive(column.getName());
+      column.loadDisplay(MAIN_SOURCE_NAME, display, this);
 
       server_ = server;
       commands_ = commands;
@@ -282,7 +282,9 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
 
    public void setActive(SourceColumn column)
    {
-      SourceColumn prevColumn = activeColumn_;
+      SourceColumn prevColumn = null;
+      if (activeColumn_ != null)
+         prevColumn = activeColumn_;
       activeColumn_ = column;
 
       // If the active column changed, we need to update the active editor
@@ -1321,6 +1323,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
             true);
       }
 
+      columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
       return result;
    }
 
@@ -1333,12 +1336,14 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       }
   }
 
+  /*
    public void closeColumn(String name, boolean force)
    {
       SourceColumn column = getByName(name);
       if (column != null)
          closeColumn(column, force);
    }
+   */
 
    public void closeColumn(SourceColumn column, boolean force)
    {
@@ -1348,6 +1353,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       if (column == activeColumn_)
          setActive("");
       columnList_.remove(column);
+      columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
    }
 
    public void ensureVisible(boolean newTabPending)
@@ -1770,7 +1776,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
 
    private void initDynamicCommands()
    {
-      dynamicCommands_ = new HashSet<AppCommand>();
+      dynamicCommands_ = new HashSet<>();
       dynamicCommands_.add(commands_.saveSourceDoc());
       dynamicCommands_.add(commands_.reopenSourceDocWithEncoding());
       dynamicCommands_.add(commands_.saveSourceDocAs());
