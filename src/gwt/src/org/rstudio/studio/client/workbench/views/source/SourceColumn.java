@@ -461,6 +461,39 @@ public class SourceColumn implements BeforeShowEvent.Handler,
             mode);
    }
 
+   public void addTab(EditingTarget target, Integer position, boolean switchToTab)
+   {
+      if (!editors_.contains(target))
+      {
+         if (position == null)
+         {
+            editors_.add(target);
+         } else
+         {
+            // we're inserting into an existing permuted tabset -- push aside
+            // any tabs physically to the right of this tab
+            editors_.add(position, target);
+            for (int i = 0; i < tabOrder_.size(); i++)
+            {
+               int pos = tabOrder_.get(i);
+               if (pos >= position)
+                  tabOrder_.set(i, pos + 1);
+            }
+
+            // add this tab in its "natural" position
+            tabOrder_.add(position, position);
+         }
+         display_.addTab(
+            target.asWidget(),
+            target.getIcon(),
+            target.getId(),
+            target.getName().getValue(),
+            target.getTabTooltip(),
+            null,
+            switchToTab);
+      }
+   }
+
    public EditingTarget addTab(SourceDocument doc, Integer position, int mode)
    {
       final String defaultNamePrefix = editingTargetSource_.getDefaultNamePrefix(doc);
@@ -494,7 +527,7 @@ public class SourceColumn implements BeforeShowEvent.Handler,
                       target.getName().getValue(),
                       target.getTabTooltip(), // used as tooltip, if non-null
                       position,
-                      true);
+             true);
       fireDocTabsChanged();
 
       target.getName().addValueChangeHandler(event -> {
@@ -533,17 +566,6 @@ public class SourceColumn implements BeforeShowEvent.Handler,
          target.beginCollabSession(doc.getCollabParams());
 
       return target;
-   }
-
-   public void addTab(Widget widget,
-                      FileIcon icon,
-                      String id,
-                      String value,
-                      String tabTooltip,
-                      Integer position,
-                      boolean switchToTab)
-   {
-      display_.addTab(widget, icon, id, value, tabTooltip, position, switchToTab);
    }
 
    public void closeDoc(String docId)

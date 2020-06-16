@@ -133,6 +133,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
                               Provider<SourceWindowManager> pWindowManager)
    {
       SourceColumn column = GWT.create(SourceColumn.class);
+      column.loadDisplay(MAIN_SOURCE_NAME, display, this);
       columnList_.add(column);
 
       server_ = server;
@@ -1322,14 +1323,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       assert(column != null);
       for (EditingTarget target : moveEditors)
       {
-         column.addTab(
-            target.asWidget(),
-            target.getIcon(),
-            target.getId(),
-            target.getName().getValue(),
-            target.getTabTooltip(), // used as tooltip, if non-null
-            null,
-            true);
+         column.addTab(target, null, false);
       }
 
       columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
