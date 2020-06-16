@@ -65,11 +65,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SourceColumn implements SelectionHandler<Integer>,
-                                     TabClosingHandler,
-                                     TabCloseHandler,
-                                     TabClosedHandler,
-                                     TabReorderHandler
+public class SourceColumn implements BeforeShowEvent.Handler,
+                                     SelectionHandler<Integer>,
+                                     TabClosingEvent.Handler,
+                                     TabCloseEvent.Handler,
+                                     TabClosedEvent.Handler,
+                                     TabReorderEvent.Handler
 {
    interface Binder extends CommandBinder<Commands, SourceColumn>
    {
@@ -105,13 +106,12 @@ public class SourceColumn implements SelectionHandler<Integer>,
       display_ = display;
       manager_ = manager;
 
+      display_.addBeforeShowHandler(this);
       display_.addSelectionHandler(this);
       display_.addTabClosingHandler(this);
       display_.addTabCloseHandler(this);
       display_.addTabClosedHandler(this);
       display_.addTabReorderHandler(this);
-
-      ensureVisible(false);
 
       // these handlers cannot be added earlier because they rely on manager_
       events_.addHandler(FileTypeChangedEvent.TYPE, event -> manageCommands(false));
@@ -183,7 +183,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       display_.cancelTabDrag();
    }
-   
+
    public void closeTab(Widget child, boolean interactive)
    {
       display_.closeTab(child, interactive);
@@ -193,7 +193,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       display_.closeTab(child, interactive, onClosed);
    }
-   
+
    public void closeTab(int index, boolean interactive)
    {
       display_.closeTab(index, interactive);
@@ -208,27 +208,27 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       return display_.getTabCount();
    }
-   
+
    public void manageChevronVisibility()
    {
 	   display_.manageChevronVisibility();
    }
-   
+
    public void moveTab(int index, int delta)
    {
 	   display_.moveTab(index, delta);
    }
-   
+
    public void selectTab(Widget widget)
    {
 	   display_.selectTab(widget);
    }
-   
+
    public void showOverflowPopout()
    {
 	   display_.showOverflowPopup();
    }
-   
+
    public void showUnsavedChangesDialog(
          String title,
          ArrayList<UnsavedChangesTarget> dirtyTargets,
@@ -237,7 +237,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       display_.showUnsavedChangesDialog(title, dirtyTargets, saveOperation, onCancelled);
    }
-   
+
    public void initialSelect(int index)
    {
       if (index >= 0 && display_.getTabCount() > index)
@@ -306,6 +306,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    void setActiveEditor()
    {
        if (activeEditor_ == null &&
+           display_.getActiveTabIndex() > 0 &&
            editors_.size() > display_.getActiveTabIndex())
           onActivate(editors_.get(display_.getActiveTabIndex()));
    }
@@ -446,12 +447,12 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       return target.asWidget();
    }
-   
+
    public EditingTarget addTab(SourceDocument doc, int mode)
    {
       return addTab(doc, false, mode);
    }
-   
+
    public EditingTarget addTab(SourceDocument doc, boolean atEnd,
          int mode)
    {
@@ -830,10 +831,10 @@ public class SourceColumn implements SelectionHandler<Integer>,
                             activeEditor_ != null &&
                             activeEditor_.isSaveCommandActive();
       commands_.saveSourceDoc().setEnabled(saveEnabled);
-      manageSaveAllCommand();
+      manageSaveAllCommand(isActive);
    }
 
-   private void manageSaveAllCommand()
+   private void manageSaveAllCommand(boolean isActive)
    {
       // if source windows are open, managing state of the command becomes
       // complicated, so leave it enabled
@@ -863,10 +864,10 @@ public class SourceColumn implements SelectionHandler<Integer>,
               SessionUtils.showPublishUi(manager_.getSession(), manager_.getUserState()) &&
                       (activeEditor_ != null) &&
                       (activeEditor_.getPath() != null) &&
-                      ((activeEditor_.getExtendedFileType() != null &&
-                              activeEditor_.getExtendedFileType() .startsWith(SourceDocument.XT_SHINY_PREFIX)) ||
-                              StringUtil.equals(activeEditor_.getExtendedFileType(), SourceDocument.XT_RMARKDOWN) ||
-                              StringUtil.equals(activeEditor_.getExtendedFileType(), SourceDocument.XT_PLUMBER_API));
+                      (activeEditor_.getExtendedFileType() != null &&
+                      (activeEditor_.getExtendedFileType().startsWith(SourceDocument.XT_SHINY_PREFIX) ||
+                       activeEditor_.getExtendedFileType().startsWith(SourceDocument.XT_RMARKDOWN_PREFIX) ||
+                       activeEditor_.getExtendedFileType() == SourceDocument.XT_PLUMBER_API));
       commands_.rsconnectDeploy().setVisible(rsCommandsAvailable);
       if (activeEditor_ != null)
       {
@@ -896,9 +897,9 @@ public class SourceColumn implements SelectionHandler<Integer>,
       boolean rmdCommandsAvailable =
               isActive &&
               manager_.getSession().getSessionInfo().getRMarkdownPackageAvailable() &&
-                      (activeEditor_ != null) &&
-                      StringUtil.equals(activeEditor_.getExtendedFileType(),
-                         SourceDocument.XT_RMARKDOWN);
+                      activeEditor_ != null &&
+                      activeEditor_.getExtendedFileType() != null &&
+                      activeEditor_.getExtendedFileType().startsWith(SourceDocument.XT_RMARKDOWN_PREFIX);
       commands_.editRmdFormatOptions().setVisible(rmdCommandsAvailable);
       commands_.editRmdFormatOptions().setEnabled(rmdCommandsAvailable);
    }
@@ -924,7 +925,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
 
    private void manageTerminalCommands(boolean isActive)
    {
-      if (!isActive && !manager_.getSession().getSessionInfo().getAllowShell())
+      if (!isActive || !manager_.getSession().getSessionInfo().getAllowShell())
          commands_.sendToTerminal().setVisible(false);
    }
 
@@ -939,7 +940,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    {
       manageCommands(false);
    }
-   
+
    public void newDoc(EditableFileType fileType,
                       ResultCallback<EditingTarget, ServerError> callback)
    {
@@ -1012,6 +1013,12 @@ public class SourceColumn implements SelectionHandler<Integer>,
    }
    // event handlers
 
+   @Override
+   public void onBeforeShow(BeforeShowEvent event)
+   {
+      onBeforeShow();
+   }
+
    public void onBeforeShow()
    {
       if (getTabCount() == 0 && newTabPending_ == 0)
@@ -1080,7 +1087,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
       if (!target.onBeforeDismiss())
          event.cancel();
    }
- 
+
    @Override
    public void onTabClose(TabCloseEvent event)
    {
@@ -1173,7 +1180,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
 
       target.onDismiss(closeDocument ? EditingTarget.DISMISS_TYPE_CLOSE :
          EditingTarget.DISMISS_TYPE_MOVE);
-      
+
       if (activeEditor_ == target)
       {
          activeEditor_.onDeactivate();
@@ -1217,7 +1224,7 @@ public class SourceColumn implements SelectionHandler<Integer>,
    private Timer debugSelectionTimer_ = null;
    private EventBus events_;
    private EditingTargetSource editingTargetSource_;
-   
+
    private SourceColumnManager manager_;
 
 }

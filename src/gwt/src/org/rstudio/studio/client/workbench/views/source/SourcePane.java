@@ -44,6 +44,8 @@ import org.rstudio.studio.client.workbench.views.source.Source.Display;
 import java.util.ArrayList;
 
 public class SourcePane extends LazyPanel implements Display,
+                                                     HasEnsureVisibleHandlers,
+                                                     HasEnsureHeightHandlers,
                                                      ProvidesResize,
                                                      RequiresResize,
                                                      BeforeShowCallback,
@@ -51,7 +53,7 @@ public class SourcePane extends LazyPanel implements Display,
 {
    @Inject
    public SourcePane()
-   {   
+   {
       setVisible(true);
       ensureWidget();
    }
@@ -119,7 +121,7 @@ public class SourcePane extends LazyPanel implements Display,
    {
       tabPanel_.add(widget, icon, docId, name, tooltip, position);
       if (switchToTab)
-         tabPanel_.selectTab(widget);
+         tabPanel_.selectTab(widget, true /* focus newly added tab */);
    }
 
    public int getTabCount()
@@ -184,12 +186,12 @@ public class SourcePane extends LazyPanel implements Display,
    {
       closeTab(tabPanel_.getWidgetIndex(child), interactive, onClosed);
    }
-   
+
    public void closeTab(int index, boolean interactive)
    {
       closeTab(index, interactive, null);
    }
-   
+
    public void closeTab(int index, boolean interactive, Command onClosed)
    {
       if (interactive)
@@ -205,7 +207,7 @@ public class SourcePane extends LazyPanel implements Display,
          OperationWithInput<UnsavedChangesDialog.Result> saveOperation,
          Command onCancelled)
    {
-      new UnsavedChangesDialog(title, 
+      new UnsavedChangesDialog(title,
                                dirtyTargets,
                                saveOperation,
                                onCancelled).showModal();
@@ -222,12 +224,13 @@ public class SourcePane extends LazyPanel implements Display,
       setOverflowVisible(true);
       tabOverflowPopup_.showRelativeTo(chevron_);
    }
-   
+
    public void ensureVisible()
    {
       fireEvent(new EnsureVisibleEvent(true));
    }
 
+   @Override
    public Widget asWidget()
    {
       return this;
@@ -257,7 +260,7 @@ public class SourcePane extends LazyPanel implements Display,
             ((RequiresVisibilityChanged)w).onVisibilityChanged(visible);
       }
    }
-   
+
    public void cancelTabDrag()
    {
       tabPanel_.cancelTabDrag();
@@ -268,14 +271,19 @@ public class SourcePane extends LazyPanel implements Display,
       return tabPanel_.addBeforeSelectionHandler(handler);
    }
 
-   public HandlerRegistration addBeforeShowHandler(BeforeShowHandler handler)
+   public HandlerRegistration addBeforeShowHandler(BeforeShowEvent.Handler handler)
    {
       return addHandler(handler, BeforeShowEvent.TYPE);
    }
 
-   public HandlerRegistration addEnsureHeightHandler(EnsureHeightHandler handler)
+   public HandlerRegistration addEnsureHeightHandler(EnsureHeightEvent.Handler handler)
    {
       return addHandler(handler, EnsureHeightEvent.TYPE);
+   }
+
+   public HandlerRegistration addEnsureVisibleHandler(EnsureVisibleEvent.Handler handler)
+   {
+      return addHandler(handler, EnsureVisibleEvent.TYPE);
    }
 
    public HandlerRegistration addSelectionHandler(SelectionHandler<Integer> handler)
@@ -283,22 +291,22 @@ public class SourcePane extends LazyPanel implements Display,
       return tabPanel_.addSelectionHandler(handler);
    }
 
-   public HandlerRegistration addTabClosingHandler(TabClosingHandler handler)
+   public HandlerRegistration addTabClosingHandler(TabClosingEvent.Handler handler)
    {
       return tabPanel_.addTabClosingHandler(handler);
    }
 
-   public HandlerRegistration addTabCloseHandler(TabCloseHandler handler)
+   public HandlerRegistration addTabCloseHandler(TabCloseEvent.Handler handler)
    {
       return tabPanel_.addTabCloseHandler(handler);
    }
 
-   public HandlerRegistration addTabClosedHandler(TabClosedHandler handler)
+   public HandlerRegistration addTabClosedHandler(TabClosedEvent.Handler handler)
    {
       return tabPanel_.addTabClosedHandler(handler);
    }
 
-   public HandlerRegistration addTabReorderHandler(TabReorderHandler handler)
+   public HandlerRegistration addTabReorderHandler(TabReorderEvent.Handler handler)
    {
       return tabPanel_.addTabReorderHandler(handler);
    }
