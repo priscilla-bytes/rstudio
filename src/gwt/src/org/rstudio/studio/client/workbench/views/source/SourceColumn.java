@@ -1038,7 +1038,8 @@ public class SourceColumn implements BeforeShowEvent.Handler,
    @Override
    public void onBeforeShow(BeforeShowEvent event)
    {
-      onBeforeShow();
+      if (manager_.getDocsRestored())
+         onBeforeShow();
    }
 
    public void onBeforeShow()
