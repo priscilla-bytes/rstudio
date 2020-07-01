@@ -1604,6 +1604,12 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
          });
    }
 
+   public void openFile(FileSystemItem file,
+                        final ResultCallback<EditingTarget, ServerError> resultCallback)
+   {
+      openFile(file, fileTypeRegistry_.getTextTypeForFile(file), resultCallback);
+   }
+
    // top-level wrapper for opening files. takes care of:
    //  - making sure the view is visible
    //  - checking whether it is already open and re-selecting its tab
