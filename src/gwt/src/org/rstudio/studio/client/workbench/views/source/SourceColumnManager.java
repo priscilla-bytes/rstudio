@@ -1386,7 +1386,6 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
       columnList_.remove(column);
       columnState_ = State.createState(JsUtil.toJsArrayString(getNames(false)));
    }
-   */
 
    public void closeColumn(SourceColumn column, boolean force)
    {
@@ -1620,7 +1619,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
 
       if (fileType.isRNotebook())
       {
-         openNotebook(file, fileType, resultCallback);
+         openNotebook(file, resultCallback);
          return;
       }
 
