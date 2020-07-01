@@ -690,9 +690,7 @@ public class Source implements InsertSourceHandler,
          );
       }
    }
-   
 
-   
    public void onShowContent(ShowContentEvent event)
    {
       // ignore if we're a satellite

@@ -138,11 +138,14 @@ public class MainSplitPanel extends NotifyingSplitLayoutPanel
          {
             // If we already have a set state, with the correct number of columns use that
             State state = value == null ? null : (State)value.cast();
-            if (state != null && state.hasSplitterPos() &&
+            if (state != null &&
+                state.hasSplitterPos() &&
                 state.getSplitterCount() == leftList_.size() + 1)
             {
-               if (state.hasPanelWidth() && state.hasWindowWidth()
-                   && state.getWindowWidth() != Window.getClientWidth())
+               // if the browser window is not the same size as our state's adjust the state
+               if (state.hasPanelWidth() &&
+                   state.hasWindowWidth() &&
+                   state.getWindowWidth() != Window.getClientWidth())
                {
                   int delta = state.getWindowWidth() - state.getPanelWidth();
                   int offsetWidth = Window.getClientWidth() - delta;
@@ -191,7 +194,9 @@ public class MainSplitPanel extends NotifyingSplitLayoutPanel
          protected JsObject getValue()
          {
             State state = JavaScriptObject.createObject().cast();
+            // total width of the object
             state.setPanelWidth(getOffsetWidth());
+            // browser window's client area excluding the vertical scroll bar
             state.setWindowWidth(Window.getClientWidth());
 
             int[] splitterArray = new int[leftList_.size() + 1];
