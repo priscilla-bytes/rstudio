@@ -58,6 +58,7 @@ import org.rstudio.studio.client.workbench.views.console.shell.assist.Completion
 import org.rstudio.studio.client.workbench.views.console.shell.editor.InputEditorLineWithCursorPosition;
 import org.rstudio.studio.client.workbench.views.console.shell.editor.InputEditorUtil;
 import org.rstudio.studio.client.workbench.views.source.PanelWithToolbars;
+import org.rstudio.studio.client.workbench.views.source.SourceColumn;
 import org.rstudio.studio.client.workbench.views.source.editors.EditingTargetToolbar;
 import org.rstudio.studio.client.workbench.views.source.editors.text.AceEditor;
 import org.rstudio.studio.client.workbench.views.source.editors.text.DocDisplay;
@@ -73,6 +74,7 @@ public class CodeBrowserEditingTargetWidget extends ResizeComposite
                               implements CodeBrowserEditingTarget.Display
 {
    public CodeBrowserEditingTargetWidget(Commands commands,
+                                         SourceColumn column,
                                          final GlobalDisplay globalDisplay,
                                          final EventBus eventBus,
                                          final CodeToolsServerOperations server,
@@ -82,6 +84,7 @@ public class CodeBrowserEditingTargetWidget extends ResizeComposite
       globalDisplay_ = globalDisplay;
       eventBus_ = eventBus;
       server_ = server;
+      column_ = column;
       
       docDisplay_ = docDisplay;
       
@@ -425,9 +428,9 @@ public class CodeBrowserEditingTargetWidget extends ResizeComposite
    
    private Toolbar createToolbar()
    {
-      Toolbar toolbar = new EditingTargetToolbar(commands_, true);
+      Toolbar toolbar = new EditingTargetToolbar(commands_, true, column_);
 
-      toolbar.addLeftWidget(commands_.printSourceDoc().createToolbarButton()); 
+      toolbar.addLeftWidget(commands_.printSourceDoc().createToolbarButton(column_));
       toolbar.addLeftSeparator();
       toolbar.addLeftWidget(findReplace_.createFindReplaceButton());
      
@@ -439,9 +442,9 @@ public class CodeBrowserEditingTargetWidget extends ResizeComposite
       ToolbarMenuButton codeTools = new ToolbarMenuButton(ToolbarButton.NoText, "Code Tools", icon, menu);
       toolbar.addLeftWidget(codeTools);
       
-      toolbar.addRightWidget(commands_.executeCode().createToolbarButton());
+      toolbar.addRightWidget(commands_.executeCode().createToolbarButton(column_));
       toolbar.addRightSeparator();
-      toolbar.addRightWidget(commands_.executeLastCode().createToolbarButton());
+      toolbar.addRightWidget(commands_.executeLastCode().createToolbarButton(column_));
       
       return toolbar;
    }
@@ -504,5 +507,6 @@ public class CodeBrowserEditingTargetWidget extends ResizeComposite
    private final TextEditingTargetFindReplace findReplace_;
    private String currentFunctionNamespace_ = null;
    private InfoBar warningBar_;
+   private SourceColumn column_;
   
 }

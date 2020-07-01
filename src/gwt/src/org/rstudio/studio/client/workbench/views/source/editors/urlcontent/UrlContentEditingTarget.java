@@ -43,8 +43,10 @@ import org.rstudio.studio.client.palette.model.CommandPaletteItem;
 import org.rstudio.studio.client.server.ServerError;
 import org.rstudio.studio.client.server.ServerRequestCallback;
 import org.rstudio.studio.client.workbench.commands.Commands;
+import org.rstudio.studio.client.workbench.views.source.SourceColumn;
 import org.rstudio.studio.client.workbench.views.source.SourceWindowManager;
 import org.rstudio.studio.client.workbench.views.source.editors.EditingTarget;
+import org.rstudio.studio.client.workbench.views.source.editors.EditingTargetSource.EditingTargetNameProvider;
 import org.rstudio.studio.client.workbench.views.source.editors.text.ace.Position;
 import org.rstudio.studio.client.workbench.views.source.events.CollabEditStartParams;
 import org.rstudio.studio.client.workbench.views.source.events.DocWindowChangedEvent;
@@ -398,11 +400,13 @@ public class UrlContentEditingTarget implements EditingTarget
       onCompleted.execute();
    }
 
-   public void initialize(SourceDocument document,
+   public void initialize(SourceColumn column,
+                          SourceDocument document,
                           FileSystemContext fileContext,
                           FileType type,
-                          Provider<String> defaultNameProvider)
+                          EditingTargetNameProvider defaultNameProvider)
    {
+      column_ = column;
       doc_ = document;
       view_ = createDisplay();
       name_.addValueChangeHandler(event -> view_.setAccessibleName(name_.getValue()));
@@ -413,7 +417,8 @@ public class UrlContentEditingTarget implements EditingTarget
    {
       return new UrlContentEditingTargetWidget("URL Browser",
             commands_,
-            getContentUrl());
+            getContentUrl(),
+            column_);
    }
 
    public long getFileSizeLimit()
@@ -484,6 +489,7 @@ public class UrlContentEditingTarget implements EditingTarget
       return (ContentItem)doc_.getProperties().cast();
    }
 
+   protected SourceColumn column_;
    protected SourceDocument doc_;
    private Value<Boolean> dirtyState_ = new Value<Boolean>(false);
 

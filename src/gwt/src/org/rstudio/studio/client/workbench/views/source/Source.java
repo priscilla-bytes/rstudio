@@ -44,7 +44,6 @@ import org.rstudio.core.client.ResultCallback;
 import org.rstudio.core.client.SerializedCommand;
 import org.rstudio.core.client.SerializedCommandQueue;
 import org.rstudio.core.client.StringUtil;
-import org.rstudio.core.client.command.AppCommand;
 import org.rstudio.core.client.command.CommandBinder;
 import org.rstudio.core.client.command.Handler;
 import org.rstudio.core.client.command.KeyCombination;
@@ -92,7 +91,6 @@ import org.rstudio.studio.client.common.filetypes.events.OpenSourceFileHandler;
 import org.rstudio.studio.client.common.filetypes.model.NavigationMethods;
 import org.rstudio.studio.client.common.rnw.RnwWeave;
 import org.rstudio.studio.client.common.rnw.RnwWeaveRegistry;
-import org.rstudio.studio.client.common.satellite.Satellite;
 import org.rstudio.studio.client.events.GetEditorContextEvent;
 import org.rstudio.studio.client.events.ReplaceRangesEvent;
 import org.rstudio.studio.client.events.ReplaceRangesEvent.ReplacementData;
@@ -110,13 +108,11 @@ import org.rstudio.studio.client.workbench.WorkbenchContext;
 import org.rstudio.studio.client.workbench.codesearch.model.SearchPathFunctionDefinition;
 import org.rstudio.studio.client.workbench.commands.Commands;
 import org.rstudio.studio.client.workbench.events.ZoomPaneEvent;
-import org.rstudio.studio.client.workbench.model.ClientState;
 import org.rstudio.studio.client.workbench.model.RemoteFileSystemContext;
 import org.rstudio.studio.client.workbench.model.Session;
 import org.rstudio.studio.client.workbench.model.SessionInfo;
 import org.rstudio.studio.client.workbench.model.UnsavedChangesItem;
 import org.rstudio.studio.client.workbench.model.UnsavedChangesTarget;
-import org.rstudio.studio.client.workbench.model.helper.IntStateValue;
 import org.rstudio.studio.client.workbench.prefs.model.UserPrefs;
 import org.rstudio.studio.client.workbench.snippets.SnippetHelper;
 import org.rstudio.studio.client.workbench.snippets.model.SnippetsChangedEvent;
@@ -128,7 +124,6 @@ import org.rstudio.studio.client.workbench.views.source.SourceWindowManager.Navi
 import org.rstudio.studio.client.workbench.views.source.editors.EditingTarget;
 import org.rstudio.studio.client.workbench.views.source.editors.codebrowser.CodeBrowserEditingTarget;
 import org.rstudio.studio.client.workbench.views.source.editors.explorer.events.OpenObjectExplorerEvent;
-import org.rstudio.studio.client.workbench.views.source.editors.explorer.model.ObjectExplorerHandle;
 import org.rstudio.studio.client.workbench.views.source.editors.profiler.OpenProfileEvent;
 import org.rstudio.studio.client.workbench.views.source.editors.profiler.model.ProfilerContents;
 import org.rstudio.studio.client.workbench.views.source.editors.text.AceEditor;
@@ -150,7 +145,6 @@ import org.rstudio.studio.client.workbench.views.source.events.CollabEditStartPa
 import org.rstudio.studio.client.workbench.views.source.events.CollabEditStartedEvent;
 import org.rstudio.studio.client.workbench.views.source.events.DocTabDragInitiatedEvent;
 import org.rstudio.studio.client.workbench.views.source.events.DocTabDragStartedEvent;
-import org.rstudio.studio.client.workbench.views.source.events.DocTabsChangedEvent;
 import org.rstudio.studio.client.workbench.views.source.events.DocWindowChangedEvent;
 import org.rstudio.studio.client.workbench.views.source.events.EditPresentationSourceEvent;
 import org.rstudio.studio.client.workbench.views.source.events.EnsureVisibleSourceWindowEvent;
@@ -167,17 +161,13 @@ import org.rstudio.studio.client.workbench.views.source.events.ShowContentHandle
 import org.rstudio.studio.client.workbench.views.source.events.ShowDataEvent;
 import org.rstudio.studio.client.workbench.views.source.events.ShowDataHandler;
 import org.rstudio.studio.client.workbench.views.source.events.SourceFileSavedEvent;
-import org.rstudio.studio.client.workbench.views.source.events.SourceNavigationEvent;
-import org.rstudio.studio.client.workbench.views.source.events.SourceNavigationHandler;
 import org.rstudio.studio.client.workbench.views.source.events.SourcePathChangedEvent;
 import org.rstudio.studio.client.workbench.views.source.events.SwitchToDocEvent;
 import org.rstudio.studio.client.workbench.views.source.events.SwitchToDocHandler;
 import org.rstudio.studio.client.workbench.views.source.model.ContentItem;
-import org.rstudio.studio.client.workbench.views.source.model.DataItem;
 import org.rstudio.studio.client.workbench.views.source.model.DocTabDragParams;
 import org.rstudio.studio.client.workbench.views.source.model.RdShellResult;
 import org.rstudio.studio.client.workbench.views.source.model.SourceDocument;
-import org.rstudio.studio.client.workbench.views.source.model.SourceNavigation;
 import org.rstudio.studio.client.workbench.views.source.model.SourcePosition;
 import org.rstudio.studio.client.workbench.views.source.model.SourceServerOperations;
 
@@ -283,7 +273,6 @@ public class Source implements InsertSourceHandler,
                  AriaLiveService ariaLive,
                  final Session session,
                  WorkbenchContext workbenchContext,
-                 Satellite satellite,
                  ConsoleEditorProvider consoleEditorProvider,
                  RnwWeaveRegistry rnwWeaveRegistry,
                  DependencyManager dependencyManager,
@@ -368,19 +357,7 @@ public class Source implements InsertSourceHandler,
          }
       });
 
-      events_.addHandler(SourceNavigationEvent.TYPE, 
-                        new SourceNavigationHandler() {
-         @Override
-         public void onSourceNavigation(SourceNavigationEvent event)
-         {
-            if (!suspendSourceNavigationAdding_)
-            {
-               columnManager_.getSourceNavigationHistory().add(event.getNavigation());
-            }
-         }
-      });
-
-      events_.addHandler(CollabEditStartedEvent.TYPE, 
+      events_.addHandler(CollabEditStartedEvent.TYPE,
             new CollabEditStartedEvent.Handler() 
       {
          @Override
@@ -548,36 +525,6 @@ public class Source implements InsertSourceHandler,
              (FocusEvent event) -> columnManager_.manageCommands(true));
       }
 
-      // get the key to use for active tab persistence; use ordinal-based key
-      // for source windows rather than their ID to avoid unbounded accumulation
-      String activeTabKey = KEY_ACTIVETAB;
-      if (!SourceWindowManager.isMainSourceWindow())
-         activeTabKey += "SourceWindow" + 
-                         pWindowManager_.get().getSourceWindowOrdinal();
-
-      new IntStateValue(MODULE_SOURCE, activeTabKey, 
-                        ClientState.PROJECT_PERSISTENT,
-                        session_.getSessionInfo().getClientState())
-      {
-         @Override
-         protected void onInit(Integer value)
-         { 
-            if (value == null)
-               return;
-
-            columnManager_.initialSelect(value);
-
-            // clear the history manager
-            columnManager_.clearSourceNavigationHistory();
-         }
-
-         @Override
-         protected Integer getValue()
-         {
-            return columnManager_.getPhysicalTabIndex();
-         }
-      };
-      
       AceEditorNative.syncUiPrefs(userPrefs_);
    }
    
@@ -635,11 +582,6 @@ public class Source implements InsertSourceHandler,
    public List<CommandPaletteItem> getCommandPaletteItems()
    {
       return columnManager_.getCommandPaletteItems();
-   }
-
-   public SourceColumnManager getColumnManager()
-   {
-      return columnManager_;
    }
 
    private boolean consoleEditorHadFocusLast()
@@ -904,7 +846,6 @@ public class Source implements InsertSourceHandler,
          }
       });
    }
-   
    
    @Handler
    public void onNewCppDoc()
@@ -1657,11 +1598,6 @@ public class Source implements InsertSourceHandler,
       }
    }
    
-   public Display getActiveView()
-   {
-      return (Display)columnManager_.getActive();
-   }
-
    @Handler
    public void onOpenSourceDoc()
    {
@@ -2091,25 +2027,6 @@ public class Source implements InsertSourceHandler,
    }
 
    @Handler
-   public void onSourceNavigateBack()
-   {
-      if (!columnManager_.getSourceNavigationHistory().isForwardEnabled())
-         columnManager_.recordCurrentNavigationHistoryPosition();
-
-      SourceNavigation navigation = columnManager_.getSourceNavigationHistory().goBack();
-      if (navigation != null)
-         attemptSourceNavigation(navigation, commands_.sourceNavigateBack());
-   }
-   
-   @Handler
-   public void onSourceNavigateForward()
-   {
-      SourceNavigation navigation = columnManager_.getSourceNavigationHistory().goForward();
-      if (navigation != null)
-         attemptSourceNavigation(navigation, commands_.sourceNavigateForward());
-   }
-   
-   @Handler
    public void onOpenNextFileOnFilesystem()
    {
       openAdjacentFile(true);
@@ -2217,73 +2134,6 @@ public class Source implements InsertSourceHandler,
                   Debug.logError(error);
                }
             });
-   }
-   
-   
-   private void attemptSourceNavigation(final SourceNavigation navigation,
-                                        final AppCommand retryCommand)
-   {
-      // see if we can navigate by id
-      String docId = navigation.getDocumentId();
-      final EditingTarget target = columnManager_.findEditor(docId);
-      if (target != null)
-      {
-         // check for navigation to the current position -- in this
-         // case execute the retry command
-         if (columnManager_.isActiveEditor(target) &&
-             target.isAtSourceRow(navigation.getPosition()))
-         {
-            if (retryCommand.isEnabled())
-               retryCommand.execute();
-         }
-         else
-         {
-            suspendSourceNavigationAdding_ = true;
-            try
-            {
-               columnManager_.selectTab(target);
-               target.restorePosition(navigation.getPosition());
-            }
-            finally
-            {
-               suspendSourceNavigationAdding_ = false;
-            }
-         }
-      }
-      
-      // check for code browser navigation
-      else if ((navigation.getPath() != null) &&
-               navigation.getPath().startsWith(CodeBrowserEditingTarget.PATH))
-      {
-         columnManager_.activateCodeBrowser(
-            navigation.getPath(),
-            false,
-            new SourceNavigationResultCallback<CodeBrowserEditingTarget>(
-                                                      navigation.getPosition(),
-                                                      retryCommand));
-      }
-      
-      // check for file path navigation
-      else if ((navigation.getPath() != null) && 
-               !navigation.getPath().startsWith(DataItem.URI_PREFIX) &&
-               !navigation.getPath().startsWith(ObjectExplorerHandle.URI_PREFIX))
-      {
-         FileSystemItem file = FileSystemItem.createFile(navigation.getPath());
-         TextFileType fileType = fileTypeRegistry_.getTextTypeForFile(file);
-         
-         // open the file and restore the position
-         columnManager_.openFile(file,
-                                 fileType,
-                                 new SourceNavigationResultCallback<EditingTarget>(
-                                                                  navigation.getPosition(),
-                                                                  retryCommand));
-      } 
-      else
-      {
-         // couldn't navigate to this item, retry
-         if (retryCommand.isEnabled())
-            retryCommand.execute();
-      }
    }
 
    @Override
@@ -2393,55 +2243,6 @@ public class Source implements InsertSourceHandler,
                pos.getEndLine(),
                pos.getEndColumn() + 1),
             executing);
-   }
-
-   private class SourceNavigationResultCallback<T extends EditingTarget> 
-                        extends ResultCallback<T,ServerError>
-   {
-      public SourceNavigationResultCallback(SourcePosition restorePosition,
-                                            AppCommand retryCommand)
-      {
-         suspendSourceNavigationAdding_ = true;
-         restorePosition_ = restorePosition;
-         retryCommand_ = retryCommand;
-      }
-      
-      @Override
-      public void onSuccess(final T target)
-      {
-         Scheduler.get().scheduleDeferred(new ScheduledCommand()
-         {
-            @Override
-            public void execute()
-            {
-               try
-               {
-                  target.restorePosition(restorePosition_);
-               }
-               finally
-               {
-                  suspendSourceNavigationAdding_ = false;
-               }
-            }
-         });
-      }
-
-      @Override
-      public void onFailure(ServerError info)
-      {
-         suspendSourceNavigationAdding_ = false;
-         if (retryCommand_.isEnabled())
-            retryCommand_.execute();
-      }
-      
-      @Override
-      public void onCancelled()
-      {
-         suspendSourceNavigationAdding_ = false;
-      }
-      
-      private final SourcePosition restorePosition_;
-      private final AppCommand retryCommand_;
    }
 
    @Override
@@ -2638,7 +2439,7 @@ public class Source implements InsertSourceHandler,
          InputEditorDisplay editor = consoleEditorProvider_.getConsoleEditor();
          if (editor != null && editor instanceof DocDisplay)
          {
-            columnManager_.getEditorContext("#console", "", (DocDisplay) editor, server_);
+            SourceColumnManager.getEditorContext("#console", "", (DocDisplay) editor, server_);
             return;
          }
       }
@@ -2718,8 +2519,6 @@ public class Source implements InsertSourceHandler,
 
    private boolean suspendSourceNavigationAdding_;
   
-   private static final String MODULE_SOURCE = "source-pane";
-   private static final String KEY_ACTIVETAB = "activeTab";
    private boolean initialized_;
    
    private final Provider<SourceWindowManager> pWindowManager_;

@@ -143,10 +143,16 @@ public class Synctex implements CompilePdfStartedEvent.Handler,
       return pdfPath_ != null;
    }
    
-   public void enableCommands(boolean enabled)
+   public void enableCommands(boolean enabled, String columnName)
    {
-      commands_.synctexSearch().setVisible(enabled);
-      commands_.synctexSearch().setEnabled(enabled);
+      commands_.synctexSearch().setVisible(enabled, columnName);
+      commands_.synctexSearch().setEnabled(enabled, columnName);
+   }
+
+   public void enableCommandButtons(boolean enabled, String columnName)
+   {
+      commands_.synctexSearch().setButtonVisible(enabled, columnName);
+      commands_.synctexSearch().setButtonEnabled(enabled, columnName);
    }
 
    // NOTE: the original design was for a single internal pdf viewer. for

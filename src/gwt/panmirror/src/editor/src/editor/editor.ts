@@ -40,6 +40,7 @@ import {
   LayoutEvent,
   FocusEvent,
   DispatchEvent,
+  NavigateEvent,
 } from '../api/event-types';
 import {
   PandocFormat,
@@ -58,7 +59,7 @@ import {
 } from '../api/transaction';
 import { EditorOutline, outlineNodes } from '../api/outline';
 import { EditingLocation, getEditingLocation, EditingOutlineLocation, setEditingLocation } from '../api/location';
-import { navigateTo } from '../api/navigation';
+import { navigateTo, NavigationType } from '../api/navigation';
 import { FixupContext } from '../api/fixup';
 import { unitToPixels, pixelsToUnit, roundUnit, kValidUnits } from '../api/image';
 import { kPercentUnit } from '../api/css';
@@ -67,6 +68,8 @@ import { diffChars, EditorChange } from '../api/change';
 import { markInputRuleFilter } from '../api/input_rule';
 import { EditorEvents } from '../api/events';
 import { insertRmdChunk } from '../api/rmd';
+import { CrossrefServer } from '../api/crossref';
+import { XRefServer } from '../api/xref';
 
 import { getTitle, setTitle } from '../nodes/yaml_metadata/yaml_metadata-title';
 
@@ -98,8 +101,6 @@ import { editorSchema } from './editor-schema';
 // import styles before extensions so they can be overriden by extensions
 import './styles/frame.css';
 import './styles/styles.css';
-import { CrossrefServer } from '../api/crossref';
-
 
 export interface EditorCode {
   code: string;
@@ -124,6 +125,7 @@ export interface EditorContext {
 export interface EditorServer {
   readonly pandoc: PandocServer;
   readonly crossref: CrossrefServer;
+  readonly xref: XRefServer;
 }
 
 export interface EditorHooks {
@@ -265,8 +267,8 @@ export class Editor {
 
     // provide format defaults
     format = {
-      pandocMode: 'markdown',
-      pandocExtensions: '',
+      pandocMode: format.pandocMode || 'markdown',
+      pandocExtensions: format.pandocExtensions || '',
       rmdExtensions: {
         codeChunks: false,
         bookdownXRef: false,
@@ -279,8 +281,7 @@ export class Editor {
         shortcodes: false,
         ...format.hugoExtensions,
       },
-      docTypes: [],
-      ...format,
+      docTypes: format.docTypes || [],
     };
 
     // provide context defaults
@@ -294,6 +295,10 @@ export class Editor {
           ...context.ui.images,
           omni_insert: {
             ...defaultImages.omni_insert,
+            ...context.ui.images,
+          },
+          citations: {
+            ...defaultImages.citations,
             ...context.ui.images,
           },
         },
@@ -380,7 +385,12 @@ export class Editor {
     this.applyTheme(defaultTheme());
 
     // create pandoc translator
-    this.pandocConverter = new PandocConverter(this.schema, this.extensions, context.server.pandoc, this.pandocCapabilities);
+    this.pandocConverter = new PandocConverter(
+      this.schema,
+      this.extensions,
+      context.server.pandoc,
+      this.pandocCapabilities,
+    );
 
     // focus editor immediately if requested
     if (this.options.autoFocus) {
@@ -590,8 +600,19 @@ export class Editor {
     this.focus();
   }
 
-  public navigate(id: string) {
-    navigateTo(this.view, node => id === node.attrs.navigation_id, false);
+  public navigate(type: NavigationType, location: string, animate = false) {
+    const nav = navigateTo(this.view, type, location, animate);
+    if (nav !== null) {
+      this.emitEvent(NavigateEvent, nav);
+    }
+  }
+
+  public navigateToId(id: string, animate = false) {
+    return this.navigate(NavigationType.Id, id, animate);
+  }
+
+  public navigateToPos(pos: number, animate = false) {
+    return this.navigate(NavigationType.Pos, pos.toString(), animate);
   }
 
   public resize() {
@@ -612,7 +633,7 @@ export class Editor {
     // get keybindings (merge user + default)
     const commandKeys = this.commandKeys();
 
-    return this.extensions.commands(this.schema, this.context.ui).map((command: ProsemirrorCommand) => {
+    return this.extensions.commands(this.schema).map((command: ProsemirrorCommand) => {
       return {
         id: command.id,
         keymap: commandKeys[command.id],
@@ -697,15 +718,24 @@ export class Editor {
   }
 
   private initExtensions() {
-    return initExtensions({
-      format: this.format,
-      options: this.options,
-      ui: this.context.ui,
-      events: { subscribe: this.subscribe.bind(this), emit: this.emitEvent.bind(this) },
-      pandocExtensions: this.pandocFormat.extensions,
-      pandocCapabilities: this.pandocCapabilities,
-      pandocServer: this.context.server.pandoc
-    }, this.context.extensions);
+    return initExtensions(
+      {
+        format: this.format,
+        options: this.options,
+        ui: this.context.ui,
+        events: {
+          subscribe: this.subscribe.bind(this),
+          emit: this.emitEvent.bind(this)
+        },
+        pandocExtensions: this.pandocFormat.extensions,
+        pandocCapabilities: this.pandocCapabilities,
+        server: this.context.server,
+        navigation: {
+          navigate: this.navigate.bind(this)
+        }
+      },
+      this.context.extensions,
+    );
   }
 
   private registerCompletionExtension() {
@@ -714,11 +744,13 @@ export class Editor {
 
     // register omni insert extension
     this.extensions.register([
-      omniInsertExtension(this.extensions.omniInserters(this.schema, this.context.ui), markFilter, this.context.ui),
+      omniInsertExtension(this.extensions.omniInserters(this.schema), markFilter, this.context.ui),
     ]);
 
     // register completion extension
-    this.extensions.register([completionExtension(this.extensions.completionHandlers(), markFilter, this.context.ui, this.events)]);
+    this.extensions.register([
+      completionExtension(this.extensions.completionHandlers(), markFilter, this.context.ui, this.events),
+    ]);
   }
 
   private createPlugins(): Plugin[] {
@@ -727,7 +759,7 @@ export class Editor {
       this.keybindingsPlugin(),
       appendTransactionsPlugin(this.extensions.appendTransactions(this.schema)),
       appendMarkTransactionsPlugin(this.extensions.appendMarkTransactions(this.schema)),
-      ...this.extensions.plugins(this.schema, this.context.ui),
+      ...this.extensions.plugins(this.schema),
       this.inputRulesPlugin(),
       this.editablePlugin(),
       this.domEventsPlugin(),
@@ -779,7 +811,7 @@ export class Editor {
             } else {
               return false;
             }
-          }
+          },
         },
       },
     });
@@ -791,7 +823,7 @@ export class Editor {
 
     // command keys from extensions
     const pluginKeys: { [key: string]: CommandFn } = {};
-    const commands = this.extensions.commands(this.schema, this.context.ui);
+    const commands = this.extensions.commands(this.schema);
     commands.forEach((command: ProsemirrorCommand) => {
       const keys = commandKeys[command.id];
       if (keys) {
@@ -812,7 +844,7 @@ export class Editor {
 
   private commandKeys(): { [key: string]: readonly string[] } {
     // start with keys provided within command definitions
-    const commands = this.extensions.commands(this.schema, this.context.ui);
+    const commands = this.extensions.commands(this.schema);
     const defaultKeys = commands.reduce((keys: { [key: string]: readonly string[] }, command: ProsemirrorCommand) => {
       keys[command.id] = command.keymap;
       return keys;

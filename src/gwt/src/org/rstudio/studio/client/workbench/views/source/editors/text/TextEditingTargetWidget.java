@@ -73,6 +73,7 @@ import org.rstudio.studio.client.workbench.prefs.model.UserState;
 import org.rstudio.studio.client.workbench.views.edit.ui.EditDialog;
 import org.rstudio.studio.client.workbench.views.source.DocumentOutlineWidget;
 import org.rstudio.studio.client.workbench.views.source.PanelWithToolbars;
+import org.rstudio.studio.client.workbench.views.source.SourceColumn;
 import org.rstudio.studio.client.workbench.views.source.editors.EditingTargetToolbar;
 import org.rstudio.studio.client.workbench.views.source.editors.text.TextEditingTarget.Display;
 import org.rstudio.studio.client.workbench.views.source.editors.text.ace.Position;
@@ -97,7 +98,8 @@ public class TextEditingTargetWidget
                                   TextFileType fileType,
                                   String extendedType,
                                   EventBus events,
-                                  Session session)
+                                  Session session,
+                                  SourceColumn column)
    {
       target_ = target;
       docUpdateSentinel_ = docUpdateSentinel;
@@ -105,6 +107,7 @@ public class TextEditingTargetWidget
       userPrefs_ = userPrefs;
       userState_ = userState;
       session_ = session;
+      column_ = column;
       fileTypeRegistry_ = fileTypeRegistry;
       editor_ = editor;
       extendedType_ = extendedType;
@@ -177,7 +180,7 @@ public class TextEditingTargetWidget
          }
       );
 
-      // setup editign container (only activate editor if we are not in visual mode)
+      // setup editing container (only activate editor if we are not in visual mode)
       editorContainer_ = new TextEditorContainer(sourceEditor_);
       if (!isVisualMode())
         editorContainer_.activateEditor();
@@ -206,6 +209,15 @@ public class TextEditingTargetWidget
                commands_.toggleSoftWrapMode().setChecked(wrap);
                editor_.setUseWrapMode(wrap);
             });
+
+      docUpdateSentinel_.addPropertyValueChangeHandler(
+         TextEditingTarget.USE_RAINBOW_PARENS, (newval) ->
+         {
+            boolean rainbowParens = StringUtil.equals(newval.getValue(),
+               DocUpdateSentinel.PROPERTY_TRUE);
+            commands_.toggleRainbowParens().setChecked(rainbowParens);
+            editor_.setRainbowParentheses(rainbowParens);
+         });
 
       userPrefs_.autoSaveOnBlur().addValueChangeHandler((evt) ->
       {
@@ -242,6 +254,12 @@ public class TextEditingTargetWidget
    {
       docUpdateSentinel_.setBoolProperty(
             TextEditingTarget.SOFT_WRAP_LINES, !editor_.getUseWrapMode());
+   }
+
+   public void toggleRainbowParens()
+   {
+      docUpdateSentinel_.setBoolProperty(
+         TextEditingTarget.USE_RAINBOW_PARENS, !editor_.getRainbowParentheses());
    }
 
    public void toggleDocumentOutline()
@@ -296,23 +314,23 @@ public class TextEditingTargetWidget
 
    private Toolbar createToolbar(TextFileType fileType)
    {
-      Toolbar toolbar = new EditingTargetToolbar(commands_, true);
+      Toolbar toolbar = new EditingTargetToolbar(commands_, true, column_);
 
-      toolbar.addLeftWidget(commands_.saveSourceDoc().createToolbarButton());
+      toolbar.addLeftWidget(commands_.saveSourceDoc().createToolbarButton(column_));
       sourceOnSave_.getElement().getStyle().setMarginRight(0, Unit.PX);
       toolbar.addLeftWidget(sourceOnSave_);
       srcOnSaveLabel_.getElement().getStyle().setMarginRight(9, Unit.PX);
       toolbar.addLeftWidget(srcOnSaveLabel_);
 
       toolbar.addLeftSeparator();
-      toolbar.addLeftWidget(commands_.checkSpelling().createToolbarButton());
+      toolbar.addLeftWidget(commands_.checkSpelling().createToolbarButton(column_));
 
       toolbar.addLeftWidget(findReplaceButton_ = findReplace_.createFindReplaceButton());
       toolbar.addLeftWidget(createCodeTransformMenuButton());
 
       notebookSeparatorWidget_ = toolbar.addLeftSeparator();
       toolbar.addLeftWidget(notebookToolbarButton_ =
-            commands_.compileNotebook().createToolbarButton());
+            commands_.compileNotebook().createToolbarButton(column_));
 
       int mod = BrowseCap.hasMetaKey() ? KeyboardShortcut.META :
          KeyboardShortcut.CTRL;
@@ -325,8 +343,8 @@ public class TextEditingTargetWidget
       toolbar.addLeftWidget(texToolbarButton_ = createLatexFormatButton());
 
       toolbar.addLeftSeparator();
-      toolbar.addLeftWidget(previewHTMLButton_ = commands_.previewHTML().createToolbarButton());
-      knitDocumentButton_ = commands_.knitDocument().createToolbarButton(false);
+      toolbar.addLeftWidget(previewHTMLButton_ = commands_.previewHTML().createToolbarButton(column_));
+      knitDocumentButton_ = commands_.knitDocument().createToolbarButton(column_);
       knitDocumentButton_.getElement().getStyle().setMarginRight(0, Unit.PX);
       toolbar.addLeftWidget(knitDocumentButton_);
 
@@ -339,7 +357,7 @@ public class TextEditingTargetWidget
          toolbar.addLeftWidget(shinyLaunchButton_);
       }
 
-      toolbar.addLeftWidget(compilePdfButton_ = commands_.compilePDF().createToolbarButton());
+      toolbar.addLeftWidget(compilePdfButton_ = commands_.compilePDF().createToolbarButton(column_));
       rmdFormatButton_ = new ToolbarPopupMenuButton("Knit options", false, true);
       rmdFormatButton_.getMenu().setAutoOpen(true);
       toolbar.addLeftWidget(rmdFormatButton_);
@@ -347,15 +365,15 @@ public class TextEditingTargetWidget
       runDocumentMenuButton_ = new ToolbarPopupMenuButton("Run document options", false, true);
       addClearKnitrCacheMenu(runDocumentMenuButton_);
       runDocumentMenuButton_.addSeparator();
-      runDocumentMenuButton_.addMenuItem(commands_.clearPrerenderedOutput().createMenuItem(false), "");
+      runDocumentMenuButton_.addMenuItem(commands_.clearPrerenderedOutput().createMenuItem(column_), "");
       toolbar.addLeftWidget(runDocumentMenuButton_);
       runDocumentMenuButton_.addSeparator();
-      runDocumentMenuButton_.addMenuItem(commands_.shinyRecordTest().createMenuItem(false), "");
-      runDocumentMenuButton_.addMenuItem(commands_.shinyRunAllTests().createMenuItem(false), "");
+      runDocumentMenuButton_.addMenuItem(commands_.shinyRecordTest().createMenuItem(column_), "");
+      runDocumentMenuButton_.addMenuItem(commands_.shinyRunAllTests().createMenuItem(column_), "");
       runDocumentMenuButton_.setVisible(false);
 
       ToolbarPopupMenu rmdOptionsMenu = new ToolbarPopupMenu();
-      rmdOptionsMenu.addItem(commands_.editRmdFormatOptions().createMenuItem(false));
+      rmdOptionsMenu.addItem(commands_.editRmdFormatOptions().createMenuItem(column_));
 
       rmdOptionsButton_ = new ToolbarMenuButton(
             ToolbarButton.NoText,
@@ -367,19 +385,19 @@ public class TextEditingTargetWidget
       toolbar.addLeftWidget(rmdOptionsButton_);
 
       toolbar.addLeftSeparator();
-      toolbar.addLeftWidget(commands_.synctexSearch().createToolbarButton());
+      toolbar.addLeftWidget(commands_.synctexSearch().createToolbarButton(column_));
 
       // create menu of chunk skeletons based on common engine types
       ToolbarPopupMenu insertChunksMenu = new ToolbarPopupMenu();
-      insertChunksMenu.addItem(commands_.insertChunkR().createMenuItem(false));
+      insertChunksMenu.addItem(commands_.insertChunkR().createMenuItem(column_));
       insertChunksMenu.addSeparator();
 
-      insertChunksMenu.addItem(commands_.insertChunkBash().createMenuItem(false));
-      insertChunksMenu.addItem(commands_.insertChunkD3().createMenuItem(false));
-      insertChunksMenu.addItem(commands_.insertChunkPython().createMenuItem(false));
-      insertChunksMenu.addItem(commands_.insertChunkRCPP().createMenuItem(false));
-      insertChunksMenu.addItem(commands_.insertChunkSQL().createMenuItem(false));
-      insertChunksMenu.addItem(commands_.insertChunkStan().createMenuItem(false));
+      insertChunksMenu.addItem(commands_.insertChunkBash().createMenuItem(column_));
+      insertChunksMenu.addItem(commands_.insertChunkD3().createMenuItem(column_));
+      insertChunksMenu.addItem(commands_.insertChunkPython().createMenuItem(column_));
+      insertChunksMenu.addItem(commands_.insertChunkRCPP().createMenuItem(column_));
+      insertChunksMenu.addItem(commands_.insertChunkSQL().createMenuItem(column_));
+      insertChunksMenu.addItem(commands_.insertChunkStan().createMenuItem(column_));
 
       insertChunkMenu_ = new ToolbarMenuButton(
                        "Insert",
@@ -391,14 +409,14 @@ public class TextEditingTargetWidget
       toolbar.addRightWidget(insertChunkMenu_);
 
       // create button that just runs default chunk insertion
-      insertChunkButton_ = commands_.insertChunk().createToolbarButton(false);
+      insertChunkButton_ = commands_.insertChunk().createToolbarButton(column_);
       toolbar.addRightWidget(insertChunkButton_);
 
-      toolbar.addRightWidget(runButton_ = commands_.executeCode().createToolbarButton(false));
+      toolbar.addRightWidget(runButton_ = commands_.executeCode().createToolbarButton(column_));
       toolbar.addRightSeparator();
-      toolbar.addRightWidget(runLastButton_ = commands_.executeLastCode().createToolbarButton(false));
-      toolbar.addRightWidget(goToPrevButton_ = commands_.goToPrevSection().createToolbarButton(false));
-      toolbar.addRightWidget(goToNextButton_ = commands_.goToNextSection().createToolbarButton(false));
+      toolbar.addRightWidget(runLastButton_ = commands_.executeLastCode().createToolbarButton(column_));
+      toolbar.addRightWidget(goToPrevButton_ = commands_.goToPrevSection().createToolbarButton(column_));
+      toolbar.addRightWidget(goToNextButton_ = commands_.goToNextSection().createToolbarButton(column_));
       toolbar.addRightSeparator();
       final String SOURCE_BUTTON_TITLE = "Source the active document";
 
@@ -414,10 +432,10 @@ public class TextEditingTargetWidget
             });
       toolbar.addRightWidget(sourceButton_);
 
-      previewJsButton_ = commands_.previewJS().createToolbarButton(false);
+      previewJsButton_ = commands_.previewJS().createToolbarButton(column_);
       toolbar.addRightWidget(previewJsButton_);
 
-      previewSqlButton_ = commands_.previewSql().createToolbarButton(false);
+      previewSqlButton_ = commands_.previewSql().createToolbarButton(column_);
       toolbar.addRightWidget(previewSqlButton_);
 
       createTestToolbarButtons(toolbar);
@@ -431,11 +449,11 @@ public class TextEditingTargetWidget
             });
 
       ToolbarPopupMenu sourceMenu = new ToolbarPopupMenu();
-      sourceMenu.addItem(commands_.sourceActiveDocument().createMenuItem(false));
-      sourceMenu.addItem(commands_.sourceActiveDocumentWithEcho().createMenuItem(false));
+      sourceMenu.addItem(commands_.sourceActiveDocument().createMenuItem(column_));
+      sourceMenu.addItem(commands_.sourceActiveDocumentWithEcho().createMenuItem(column_));
       sourceMenu.addSeparator();
-      sourceMenu.addItem(commands_.sourceAsLauncherJob().createMenuItem(false));
-      sourceMenu.addItem(commands_.sourceAsJob().createMenuItem(false));
+      sourceMenu.addItem(commands_.sourceAsLauncherJob().createMenuItem(column_));
+      sourceMenu.addItem(commands_.sourceAsJob().createMenuItem(column_));
 
       sourceMenuButton_ = new ToolbarMenuButton(ToolbarButton.NoText, "Source options", sourceMenu, true);
       toolbar.addRightWidget(sourceMenuButton_);
@@ -443,28 +461,28 @@ public class TextEditingTargetWidget
       //toolbar.addRightSeparator();
 
       ToolbarPopupMenu chunksMenu = new ToolbarPopupMenu();
-      chunksMenu.addItem(commands_.executeCode().createMenuItem(false));
+      chunksMenu.addItem(commands_.executeCode().createMenuItem(column_));
       chunksMenu.addSeparator();
-      chunksMenu.addItem(commands_.executeCurrentChunk().createMenuItem(false));
-      chunksMenu.addItem(commands_.executeNextChunk().createMenuItem(false));
+      chunksMenu.addItem(commands_.executeCurrentChunk().createMenuItem(column_));
+      chunksMenu.addItem(commands_.executeNextChunk().createMenuItem(column_));
       chunksMenu.addSeparator();
-      chunksMenu.addItem(commands_.executeSetupChunk().createMenuItem(false));
+      chunksMenu.addItem(commands_.executeSetupChunk().createMenuItem(column_));
       chunksMenu.addItem(runSetupChunkOptionMenu_= new UserPrefMenuItem<>(
             userPrefs_.autoRunSetupChunk(), true, "Run Setup Chunk Automatically",
             userPrefs_));
       chunksMenu.addSeparator();
-      chunksMenu.addItem(commands_.executePreviousChunks().createMenuItem(false));
-      chunksMenu.addItem(commands_.executeSubsequentChunks().createMenuItem(false));
+      chunksMenu.addItem(commands_.executePreviousChunks().createMenuItem(column_));
+      chunksMenu.addItem(commands_.executeSubsequentChunks().createMenuItem(column_));
       if (userPrefs_.rmdChunkOutputInline().getValue())
       {
          chunksMenu.addSeparator();
          chunksMenu.addItem(
-               commands_.restartRRunAllChunks().createMenuItem(false));
+               commands_.restartRRunAllChunks().createMenuItem(column_));
          chunksMenu.addItem(
-               commands_.restartRClearOutput().createMenuItem(false));
+               commands_.restartRClearOutput().createMenuItem(column_));
       }
       chunksMenu.addSeparator();
-      chunksMenu.addItem(commands_.executeAllCode().createMenuItem(false));
+      chunksMenu.addItem(commands_.executeAllCode().createMenuItem(column_));
       chunksButton_ = new ToolbarMenuButton(
                        "Run",
                        ToolbarButton.NoTitle,
@@ -608,6 +626,7 @@ public class TextEditingTargetWidget
          false, /* textIndicatesState */
          new ImageResource2x(StandardIcons.INSTANCE.visual_mode2x()), event -> {
             boolean visible = !isVisualMode();
+            target_.recordCurrentNavigationPosition();
             docUpdateSentinel_.setBoolProperty(TextEditingTarget.RMD_VISUAL_MODE, visible);
             toggleRmdVisualModeButton_.setLatched(visible);
          });
@@ -683,27 +702,27 @@ public class TextEditingTargetWidget
          ImageResource icon = new ImageResource2x(ThemeResources.INSTANCE.codeTransform2x());
 
          ToolbarPopupMenu menu = new ToolbarPopupMenu();
-         menu.addItem(commands_.codeCompletion().createMenuItem(false));
+         menu.addItem(commands_.codeCompletion().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.goToHelp().createMenuItem(false));
-         menu.addItem(commands_.goToDefinition().createMenuItem(false));
-         menu.addItem(commands_.findUsages().createMenuItem(false));
+         menu.addItem(commands_.goToHelp().createMenuItem(column_));
+         menu.addItem(commands_.goToDefinition().createMenuItem(column_));
+         menu.addItem(commands_.findUsages().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.extractFunction().createMenuItem(false));
-         menu.addItem(commands_.extractLocalVariable().createMenuItem(false));
-         menu.addItem(commands_.renameInScope().createMenuItem(false));
+         menu.addItem(commands_.extractFunction().createMenuItem(column_));
+         menu.addItem(commands_.extractLocalVariable().createMenuItem(column_));
+         menu.addItem(commands_.renameInScope().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.reflowComment().createMenuItem(false));
-         menu.addItem(commands_.commentUncomment().createMenuItem(false));
-         menu.addItem(commands_.insertRoxygenSkeleton().createMenuItem(false));
+         menu.addItem(commands_.reflowComment().createMenuItem(column_));
+         menu.addItem(commands_.commentUncomment().createMenuItem(column_));
+         menu.addItem(commands_.insertRoxygenSkeleton().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.reindent().createMenuItem(false));
-         menu.addItem(commands_.reformatCode().createMenuItem(false));
+         menu.addItem(commands_.reindent().createMenuItem(column_));
+         menu.addItem(commands_.reformatCode().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.showDiagnosticsActiveDocument().createMenuItem(false));
-         menu.addItem(commands_.showDiagnosticsProject().createMenuItem(false));
+         menu.addItem(commands_.showDiagnosticsActiveDocument().createMenuItem(column_));
+         menu.addItem(commands_.showDiagnosticsProject().createMenuItem(column_));
          menu.addSeparator();
-         menu.addItem(commands_.profileCode().createMenuItem(false));
+         menu.addItem(commands_.profileCode().createMenuItem(column_));
          codeTransform_ = new ToolbarMenuButton(ToolbarButton.NoText, "Code Tools", icon, menu);
       }
 
@@ -736,7 +755,8 @@ public class TextEditingTargetWidget
       boolean isPlainMarkdown = fileType.isPlainMarkdown();
       boolean isCpp = fileType.isCpp();
       boolean isScript = fileType.isScript();
-      boolean isRMarkdown2 = extendedType_ == "rmarkdown";
+      boolean isRMarkdown2 = extendedType_ != null && 
+                             extendedType_.startsWith(SourceDocument.XT_RMARKDOWN_PREFIX);
       boolean canPreviewFromR = fileType.canPreviewFromR();
       boolean terminalAllowed = session_.getSessionInfo().getAllowShell();
 
@@ -860,9 +880,10 @@ public class TextEditingTargetWidget
       }
 
       toggleVisualModeOutlineButton_.setVisible(visualRmdMode);
-
-      // update wrap mode for filetype
+      
+      // update modes for filetype
       syncWrapMode();
+      syncRainbowParenMode();
 
       toolbar_.invalidateSeparators();
    }
@@ -1117,6 +1138,7 @@ public class TextEditingTargetWidget
 
       // sync the state of the command marking word wrap mode for this document
       syncWrapMode();
+      syncRainbowParenMode();
 
       Scheduler.get().scheduleDeferred(() -> manageToolbarSizes());
    }
@@ -1635,11 +1657,11 @@ public class TextEditingTargetWidget
 
             menu.addSeparator();
 
-            menu.addItem(commands_.notebookExpandAllOutput().createMenuItem(false));
-            menu.addItem(commands_.notebookCollapseAllOutput().createMenuItem(false));
+            menu.addItem(commands_.notebookExpandAllOutput().createMenuItem(column_));
+            menu.addItem(commands_.notebookCollapseAllOutput().createMenuItem(column_));
             menu.addSeparator();
-            menu.addItem(commands_.notebookClearOutput().createMenuItem(false));
-            menu.addItem(commands_.notebookClearAllOutput().createMenuItem(false));
+            menu.addItem(commands_.notebookClearOutput().createMenuItem(column_));
+            menu.addItem(commands_.notebookClearAllOutput().createMenuItem(column_));
             menu.addSeparator();
          }
 
@@ -1647,7 +1669,7 @@ public class TextEditingTargetWidget
       }
 
       if (showOutputOptions)
-         menu.addItem(commands_.editRmdFormatOptions().createMenuItem(false));
+         menu.addItem(commands_.editRmdFormatOptions().createMenuItem(column_));
    }
 
    @Override
@@ -1747,6 +1769,17 @@ public class TextEditingTargetWidget
       commands_.toggleSoftWrapMode().setChecked(wrapMode);
    }
 
+   private void syncRainbowParenMode()
+   {
+      boolean rainbowMode = editor_.getRainbowParentheses();
+      if (docUpdateSentinel_.hasProperty(TextEditingTarget.USE_RAINBOW_PARENS))
+      {
+         rainbowMode = docUpdateSentinel_.getBoolProperty(TextEditingTarget.USE_RAINBOW_PARENS, rainbowMode);
+      }
+      editor_.setRainbowParentheses(rainbowMode);
+      commands_.toggleRainbowParens().setChecked(rainbowMode);
+   }
+
    private final TextEditingTarget target_;
    private final DocUpdateSentinel docUpdateSentinel_;
    private final Commands commands_;
@@ -1760,6 +1793,7 @@ public class TextEditingTargetWidget
    private final ShinyViewerTypePopupMenu shinyViewerMenu_;
    private final ShinyTestPopupMenu shinyTestMenu_;
    private final PlumberViewerTypePopupMenu plumberViewerMenu_;
+   private SourceColumn column_;
    private String extendedType_;
    private String publishPath_;
    private CheckBox sourceOnSave_;

@@ -1,5 +1,5 @@
 /*
- * PanmirrorInsertCitationResult.java
+ * JsConsumerFunction.java
  *
  * Copyright (C) 2020 by RStudio, PBC
  *
@@ -13,17 +13,14 @@
  *
  */
 
+package org.rstudio.core.client.jsinterop;
 
-package org.rstudio.studio.client.panmirror.dialogs.model;
 
-import jsinterop.annotations.JsType;
+import elemental2.core.JsObject;
+import jsinterop.annotations.JsFunction;
 
-@JsType
-public class PanmirrorInsertCitationResult
+@JsFunction
+public interface JsConsumerFunction
 {
-   public String id;
-   public String locator;
+   void call(JsObject obj);
 }
-
-
-

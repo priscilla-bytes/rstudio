@@ -6157,9 +6157,34 @@ public class RemoteServer implements Server
    }
    
    @Override
+   public void pandocGetBibliography(String file, JsArrayString bibliographies, String refBlock, String etag, ServerRequestCallback<JavaScriptObject> callback) {
+      JSONArray params = new JSONArray();
+      params.set(0, new JSONString(StringUtil.notNull(file)));
+      params.set(1, new JSONArray(bibliographies));
+      params.set(2, new JSONString(StringUtil.notNull(refBlock)));
+      params.set(3, new JSONString(StringUtil.notNull(etag)));
+      sendRequest(RPC_SCOPE, PANDOC_GET_BIBLIOGRAPHY, params, callback);
+   }
+    
+   @Override
    public void crossrefWorks(String query, ServerRequestCallback<JavaScriptObject> callback)
    {
       sendRequest(RPC_SCOPE, CROSSREF_WORKS, query, callback);
+   }
+   
+   @Override
+   public void xrefIndexForFile(String file, ServerRequestCallback<JavaScriptObject> callback)
+   {
+      sendRequest(RPC_SCOPE, XREF_INDEX_FOR_FILE, file, callback);
+   }
+   
+   @Override
+   public void xrefForId(String file, String id, ServerRequestCallback<JavaScriptObject> callback)
+   {
+      JSONArray params = new JSONArray();
+      params.set(0, new JSONString(file));
+      params.set(1, new JSONString(id));
+      sendRequest(RPC_SCOPE, XREF_FOR_ID, params, callback);
    }
 
    @Override
@@ -6658,7 +6683,12 @@ public class RemoteServer implements Server
    private static final String PANDOC_AST_TO_MARKDOWN = "pandoc_ast_to_markdown";
    private static final String PANDOC_MARKDOWN_TO_AST = "pandoc_markdown_to_ast";
    private static final String PANDOC_LIST_EXTENSIONS = "pandoc_list_extensions";
+   private static final String PANDOC_GET_BIBLIOGRAPHY = "pandoc_get_bibliography";
    
    private static final String CROSSREF_WORKS = "crossref_works";
+   
+   private static final String XREF_INDEX_FOR_FILE = "xref_index_for_file";
+   private static final String XREF_FOR_ID = "xref_for_id";
+
    
 }

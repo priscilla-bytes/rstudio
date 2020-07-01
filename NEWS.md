@@ -27,12 +27,15 @@
 * New option to configure soft wrapping for R Markdown files, and command to change the soft wrap mode of the editor on the fly (#2341)
 * Add option `www-url-path-prefix` to force a path on auth cookies (Pro #1608)
 * New Command Palette for searching and running build-in commands and add-ins (#5168)
+* Colorize parentheses, braces, and brackets in assorted colors (#7027)
 * Option to display Console error and message output in same color as regular output (#7029)
 * Moved console options to a new pane in Global Options (#7047)
 
 ### RStudio Server Pro
 
 * SAML is now supported as an authentication mechanism (Pro #1194)
+* OpenID Connect is now support as an authentication mechanism (Pro #1747)
+* New `auth-proxy-sign-out-url` option specified an endpoint to take the user to when "Sign Out" is clicked in the IDE user interface (Pro #1745)
 * New `X-RStudio-Request` header for specifying originating URL behind path-rewriting proxies (Pro #1579)
 * New user profile option `session-limit` allow limiting the maximum number of sessions a user can have (Pro #540)
 * Project sharing is automatically disabled and a warning is issued when `server-multiple-sessions=0`. (Pro #1263)

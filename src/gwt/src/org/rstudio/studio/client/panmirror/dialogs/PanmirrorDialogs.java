@@ -24,7 +24,6 @@ import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorCodeBlockProps
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorImageDimensions;
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorAttrEditResult;
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorImageProps;
-import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorInsertCitationResult;
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorInsertTableResult;
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorLinkCapabilities;
 import org.rstudio.studio.client.panmirror.dialogs.model.PanmirrorLinkEditResult;
@@ -143,28 +142,28 @@ public class PanmirrorDialogs {
       );
    }
    
-   public Promise<PanmirrorAttrEditResult> editAttr(PanmirrorAttrProps attr)
+   public Promise<PanmirrorAttrEditResult> editAttr(PanmirrorAttrProps attr, String idHint)
    {
-      return editPanmirrorAttr("Edit Attributes", null, attr);
+      return editPanmirrorAttr("Edit Attributes", null, idHint, attr);
    }
 
    
    public Promise<PanmirrorAttrEditResult> editSpan(PanmirrorAttrProps attr)
    {
-      return editPanmirrorAttr("Span Attributes", "Unwrap Span", attr);
+      return editPanmirrorAttr("Span Attributes", "Unwrap Span", null, attr);
    }
    
    public Promise<PanmirrorAttrEditResult> editDiv(PanmirrorAttrProps attr, boolean removeEnabled)
    {
-      return editPanmirrorAttr("Div Attributes", removeEnabled ? "Unwrap Div" : null, attr);
+      return editPanmirrorAttr("Div Attributes", removeEnabled ? "Unwrap Div" : null, null, attr);
    }
 
 
-   private Promise<PanmirrorAttrEditResult> editPanmirrorAttr(String caption, String removeButtonCaption, PanmirrorAttrProps attr) 
+   private Promise<PanmirrorAttrEditResult> editPanmirrorAttr(String caption, String removeButtonCaption, String idHint, PanmirrorAttrProps attr) 
    {
       return new Promise<PanmirrorAttrEditResult>(
          (ResolveCallbackFn<PanmirrorAttrEditResult> resolve, RejectCallbackFn reject) -> {  
-            PanmirrorEditAttrDialog dialog = new PanmirrorEditAttrDialog(caption, removeButtonCaption, attr, 
+            PanmirrorEditAttrDialog dialog = new PanmirrorEditAttrDialog(caption, removeButtonCaption, idHint, attr, 
                (result) -> { resolve.onInvoke(result); }
             );
             dialog.showModal(false);
@@ -201,19 +200,6 @@ public class PanmirrorDialogs {
       return new Promise<PanmirrorInsertTableResult>(
          (ResolveCallbackFn<PanmirrorInsertTableResult> resolve, RejectCallbackFn reject) -> {  
             PanmirrorInsertTableDialog dialog = new PanmirrorInsertTableDialog(capabilities, (result) -> {
-               resolve.onInvoke(result);
-            });
-            dialog.showModal(false);
-         }
-      );
-   }
-   
-   
-   public Promise<PanmirrorInsertCitationResult> insertCitation()
-   {
-      return new Promise<PanmirrorInsertCitationResult>(
-         (ResolveCallbackFn<PanmirrorInsertCitationResult> resolve, RejectCallbackFn reject) -> {  
-            PanmirrorInsertCitationDialog dialog = new PanmirrorInsertCitationDialog((result) -> {
                resolve.onInvoke(result);
             });
             dialog.showModal(false);

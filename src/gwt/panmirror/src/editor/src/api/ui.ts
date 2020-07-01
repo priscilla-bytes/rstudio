@@ -45,10 +45,12 @@ export interface EditorDialogs {
   editRawInline: RawFormatEditorFn;
   editRawBlock: RawFormatEditorFn;
   insertTable: InsertTableFn;
-  insertCitation: InsertCitationFn;
 }
 
 export interface EditorUIContext {
+  // get the path to the current document
+  getDocumentPath: () => string | null;
+
   // get the default directory for resources (e.g. where relative links point to)
   getDefaultResourceDir: () => string;
 
@@ -57,6 +59,9 @@ export interface EditorUIContext {
 
   // map from a resource reference (e.g. images/foo.png) to a URL we can use in the document
   mapResourceToURL: (path: string) => string;
+
+  // watch a resource for changes (returns an unsubscribe function)
+  watchResource: (path: string, notify: VoidFunction) => VoidFunction;
 
   // translate a string
   translateText: (text: string) => string;
@@ -100,7 +105,7 @@ export enum AlertType {
 
 export type AlertFn = (message: string, title?: string, type?: AlertType) => Promise<boolean>;
 
-export type AttrEditorFn = (attr: AttrProps) => Promise<AttrEditResult | null>;
+export type AttrEditorFn = (attr: AttrProps, idHint?: string) => Promise<AttrEditResult | null>;
 
 export type DivAttrEditorFn = (attr: AttrProps, removeEnabled: boolean) => Promise<AttrEditResult | null>;
 
@@ -127,8 +132,6 @@ export type ListEditorFn = (list: ListProps, capabilities: ListCapabilities) => 
 export type RawFormatEditorFn = (raw: RawFormatProps, outputFormats: string[]) => Promise<RawFormatResult | null>;
 
 export type InsertTableFn = (capabilities: TableCapabilities) => Promise<InsertTableResult | null>;
-
-export type InsertCitationFn = () => Promise<InsertCitationResult | null>;
 
 export interface AttrProps {
   readonly id?: string;
@@ -198,11 +201,6 @@ export interface InsertTableResult {
   cols: number;
   header: boolean;
   caption?: string;
-}
-
-export interface InsertCitationResult {
-  id: string;
-  locator: string;
 }
 
 export interface RawFormatProps {

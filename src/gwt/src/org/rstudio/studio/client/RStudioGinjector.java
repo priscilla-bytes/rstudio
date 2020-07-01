@@ -72,6 +72,7 @@ import org.rstudio.studio.client.panmirror.dialogs.PanmirrorEditRawDialog;
 import org.rstudio.studio.client.panmirror.outline.PanmirrorOutlineWidget;
 import org.rstudio.studio.client.panmirror.pandoc.PanmirrorPandocServer;
 import org.rstudio.studio.client.panmirror.server.PanmirrorCrossrefServer;
+import org.rstudio.studio.client.panmirror.server.PanmirrorXRefServer;
 import org.rstudio.studio.client.panmirror.ui.PanmirrorUIDisplay;
 import org.rstudio.studio.client.panmirror.ui.PanmirrorUIPrefs;
 import org.rstudio.studio.client.plumber.PlumberAPI;
@@ -179,6 +180,7 @@ import org.rstudio.studio.client.workbench.views.source.editors.text.visualmode.
 import org.rstudio.studio.client.workbench.views.source.editors.text.visualmode.VisualModeChunkExec;
 import org.rstudio.studio.client.workbench.views.source.editors.text.visualmode.VisualModePanmirrorFormat;
 import org.rstudio.studio.client.workbench.views.source.editors.text.visualmode.VisualModeMarkdownWriter;
+import org.rstudio.studio.client.workbench.views.source.editors.text.visualmode.VisualModeNavigation;
 import org.rstudio.studio.client.workbench.views.vcs.svn.SVNCommandHandler;
 import org.rstudio.studio.client.workbench.views.environment.ClearAllDialog;
 import org.rstudio.studio.client.workbench.views.environment.dataimport.DataImport;
@@ -303,6 +305,7 @@ public interface RStudioGinjector extends Ginjector
    void injectMembers(JobsDisplayImpl jobDisplayBaseImpl);
    void injectMembers(PanmirrorPandocServer panmirrorPandocServer);
    void injectMembers(PanmirrorCrossrefServer panmirrorCrossrefServer);
+   void injectMembers(PanmirrorXRefServer panmirrorXrefServer);
    void injectMembers(PanmirrorDialogs panmirrorEditorUI);
    void injectMembers(PanmirrorWidget panmirrorWidget);
    void injectMembers(PanmirrorOutlineWidget panmirrorOutlineWidget);
@@ -310,6 +313,7 @@ public interface RStudioGinjector extends Ginjector
    void injectMembers(PanmirrorUIDisplay panmirrorUIDisplay);
    void injectMembers(PanmirrorUIPrefs panmirrorUIPrefs);
    void injectMembers(VisualMode visualMode);
+   void injectMembers(VisualModeNavigation visualModeNavigation);
    void injectMembers(VisualModeChunkExec visualModeChunkExec);
    void injectMembers(VisualModePanmirrorContext visualModePanmirrorContext);
    void injectMembers(VisualModePanmirrorFormat visualModePanmirrorFormat);
@@ -342,6 +346,7 @@ public interface RStudioGinjector extends Ginjector
    Session getSession();
    HelpStrategy getHelpStrategy();
    ShortcutViewer getShortcutViewer();
+   SourceColumnManager getSourceColumnManager();
    Satellite getSatellite();
    SatelliteManager getSatelliteManager();
    SourceWindowManager getSourceWindowManager();
