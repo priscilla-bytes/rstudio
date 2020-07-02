@@ -24,6 +24,8 @@ public interface PreferencesDialogResources extends ClientBundle
    {
       String panelContainer();
       String column();
+      String closeButton();
+      String label();
       String panelContainerNoChooser();
       String paneLayoutTable();
       String themeChooser();

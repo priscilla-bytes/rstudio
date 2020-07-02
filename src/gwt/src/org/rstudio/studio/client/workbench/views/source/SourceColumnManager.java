@@ -1368,7 +1368,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
 
       // if we could not remove empty columns to get to the desired amount, consolidate editors
       ArrayList<EditingTarget> moveEditors = new ArrayList<>();
-      if (num >= columnList_.size())
+      if (num < columnList_.size())
       {
          for (SourceColumn column : columnList_)
          {
@@ -1376,7 +1376,7 @@ public class SourceColumnManager implements CommandPaletteEntrySource,
             {
                moveEditors.addAll(column.getEditors());
                closeAllLocalSourceDocs("Close All", column, null, false);
-               if (columnList_.size() >= num || num == 1)
+               if (columnList_.size() <= num || num == 1)
                   break;
             }
          }

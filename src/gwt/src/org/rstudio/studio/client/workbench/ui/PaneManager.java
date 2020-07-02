@@ -1163,8 +1163,7 @@ public class PaneManager
       }
       else
       {
-         int difference = additionalSourceCount_ - count;
-         sourceColumnManager_.consolidateColumns(difference);
+         sourceColumnManager_.consolidateColumns(count + 1);
          panel_.resetLeftWidgets(sourceColumnManager_.getWidgets(true));
          additionalSourceCount_ = sourceColumnManager_.getSize();
       }

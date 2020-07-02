@@ -53,6 +53,19 @@
    overflow: hidden;
 }
 
+.column .closeButton {
+   position: absolute;
+   right: 0px;
+   overflow: hidden;
+}
+
+.column .label {
+   /*margin: auto;*/
+   top: 50%;
+   bottom: 50%;
+   /*vertical-align: baseline;*/
+}
+
 .paneLayoutTable .gwt-CheckBox {
    display: block;
    margin: 0 0 0 2px;

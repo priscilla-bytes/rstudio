@@ -18,6 +18,8 @@ import com.google.gwt.aria.client.Roles;
 import com.google.gwt.core.client.JsArrayString;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
@@ -27,6 +29,7 @@ import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.ScrollPanel;
@@ -37,6 +40,8 @@ import org.rstudio.core.client.Debug;
 import org.rstudio.core.client.StringUtil;
 import org.rstudio.core.client.prefs.RestartRequirement;
 import org.rstudio.core.client.resources.ImageResource2x;
+import org.rstudio.core.client.theme.res.ThemeResources;
+import org.rstudio.core.client.theme.res.ThemeStyles;
 import org.rstudio.core.client.widget.FormLabel;
 import org.rstudio.core.client.widget.ImageButton;
 import org.rstudio.core.client.widget.ScrollPanelWithClick;
@@ -332,7 +337,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       double columnWidthValue = (double)tableWidth / columnCount;
       double cellWidthValue = columnWidthValue * 2;
 
-      // We never need more than MAX_COLUMN_WITH for a column, so if we have extra, give it back to
+      // We never need more than MAX_COLUMN_WIDTH for a column, so if we have extra, give it back to
       // the cells
       if (Math.min(columnWidthValue, MAX_COLUMN_WIDTH) != columnWidthValue)
       {
@@ -340,9 +345,9 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
          cellWidthValue += extra;
          columnWidthValue = MAX_COLUMN_WIDTH;
       }
-
       cellWidthValue -= GRID_CELL_SPACING - GRID_CELL_PADDING;
       columnWidthValue -= GRID_CELL_SPACING - GRID_CELL_PADDING;
+
       final String columnWidth = columnWidthValue + "px";
       final String cellWidth = cellWidthValue + "px";
 
@@ -445,11 +450,32 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
    private ScrollPanel createColumn()
    {
+      VerticalPanel verticalPanel = new VerticalPanel();
+
+      Image closeButton = new Image(new ImageResource2x(ThemeResources.INSTANCE.closeTab2x()));
+      closeButton.setStylePrimaryName(ThemeStyles.INSTANCE.closeTabButton());
+      closeButton.addStyleName(ThemeStyles.INSTANCE.handCursor());
+      closeButton.addStyleName(res_.styles().closeButton());
+
+      Roles.getButtonRole().setAriaLabelProperty(closeButton.getElement(), "Close source column");
+      verticalPanel.add(closeButton);
+
       FormLabel label = new FormLabel();
       label.setText(UserPrefsAccessor.Panes.QUADRANTS_SOURCE);
+      label.setStyleName(res_.styles().label());
+      verticalPanel.add(label);
 
       ScrollPanel sp = new ScrollPanel();
-      sp.add(label);
+      closeButton.addClickHandler(new ClickHandler()
+      {
+         @Override
+         public void onClick(ClickEvent event)
+         {
+            dirty_ = true;
+            updateTable(displayColumnCount_ - 1);
+         }
+      });
+      sp.add(verticalPanel);
       Roles.getTextboxRole().setAriaLabelProperty(sp.getElement(), "Additional source column");
 
       return sp;
