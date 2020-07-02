@@ -1165,7 +1165,7 @@ public class PaneManager
       {
          sourceColumnManager_.consolidateColumns(count + 1);
          panel_.resetLeftWidgets(sourceColumnManager_.getWidgets(true));
-         additionalSourceCount_ = sourceColumnManager_.getSize();
+         additionalSourceCount_ = sourceColumnManager_.getSize() - 1;
       }
       return additionalSourceCount_;
    }
