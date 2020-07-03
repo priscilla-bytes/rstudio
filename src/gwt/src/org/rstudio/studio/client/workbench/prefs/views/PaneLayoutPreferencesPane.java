@@ -122,7 +122,6 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
                checkBox.setVisible(false);
          }
          scrollPanel.setStyleName(res_.styles().paneLayoutTable());
-         scrollPanel.setHeight("180px");
          scrollPanel.setWidth(width);
          scrollPanel.add(flowPanel);
          initWidget(scrollPanel);
@@ -330,7 +329,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
       if (grid_ != null && displayColumnCount_ == updateCount)
          return "";
 
-      int tableWidth = 375;
+      int tableWidth = 400;
 
       // cells will be twice a wide as columns to preserve space (only cells have checkboxes)
       double columnCount = updateCount + 4;
@@ -350,6 +349,7 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
       final String columnWidth = columnWidthValue + "px";
       final String cellWidth = cellWidthValue + "px";
+
 
       leftTop_.setWidth(cellWidth);
       leftBottom_.setWidth(cellWidth);
@@ -631,5 +631,5 @@ public class PaneLayoutPreferencesPane extends PreferencesPane
 
    private final static int GRID_CELL_SPACING = 8;
    private final static int GRID_CELL_PADDING = 6;
-   private final static int MAX_COLUMN_WIDTH = 50;
+   private final static int MAX_COLUMN_WIDTH = 70;
 }

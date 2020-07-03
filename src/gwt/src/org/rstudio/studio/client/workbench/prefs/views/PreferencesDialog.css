@@ -28,14 +28,17 @@
 }
 
 .paneLayoutTable {
-   margin-left: auto;
+   margin-left: 0;
+   margin-right: 0;
+   height: 160px;
+   width: 400px;
+   padding: 0 0 0 0;
 }
 
 .paneLayoutTable td.paneLayoutTable {
    background-color: white;
-   height: 180px;
    vertical-align: top;
-   padding: 0px;
+   padding: 0;
    border: none;
    -moz-border-radius: 6px;
    -webkit-border-radius: 6px;
@@ -44,38 +47,35 @@
 
 .column {
    background-color: white;
-   height: 300px;
+   padding: 0 0 0 0;
    vertical-align: top;
-   padding-top: 0px;
    -moz-border-radius: 6px;
    -webkit-border-radius: 6px;
    border-radius: 6px;
+   border: 1px solid #1e77bc;
    overflow: hidden;
 }
 
 .column .closeButton {
+   top: 2px;
    position: absolute;
-   right: 0px;
-   overflow: hidden;
+   right: 0;
 }
 
 .column .label {
-   /*margin: auto;*/
-   top: 50%;
-   bottom: 50%;
-   /*vertical-align: baseline;*/
+   margin-top: 170px;
+   overflow: hidden;
 }
 
 .paneLayoutTable .gwt-CheckBox {
    display: block;
    margin: 0 0 0 2px;
    max-height: 18px;
-   width: 95px;
    font-size: 11px;
 }
 
 .paneLayoutTable select {
-   width: 195px;
+   width: 250px;
    margin-bottom: 5px;
 }
 
