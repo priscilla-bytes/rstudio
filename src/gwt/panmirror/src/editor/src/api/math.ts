@@ -21,7 +21,10 @@ export interface EditorMath {
   typeset: (el: HTMLElement, math: string) => void;
 }
 
-export function editorMath(ui: EditorUI, typesetQueue: PromiseQueue): EditorMath {
+export function editorMath(ui: EditorUI): EditorMath {
+
+  // queue so we only do one typeset at a time
+  const typesetQueue = new PromiseQueue();
 
   // return a promise that will typeset this node's math (including retrying as long as is
   // required if the element is not yet connected to the DOM)

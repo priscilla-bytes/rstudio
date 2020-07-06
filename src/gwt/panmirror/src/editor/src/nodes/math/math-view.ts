@@ -22,7 +22,8 @@ import { EditorMath } from "../../api/math";
 // custom NodeView that accomodates display / interaction with item check boxes
 export class MathNodeView implements NodeView {
   public readonly dom: HTMLElement;
-  // public readonly contentDOM: HTMLElement;
+  public readonly mathjaxDOM: HTMLElement;
+  public readonly contentDOM: HTMLElement;
 
   private node: ProsemirrorNode;
   private readonly view: EditorView;
@@ -39,6 +40,11 @@ export class MathNodeView implements NodeView {
 
     // create root span element
     this.dom = window.document.createElement('span');
+    this.contentDOM = window.document.createElement('span');
+    this.dom.append(this.contentDOM);
+    this.mathjaxDOM = window.document.createElement('span');
+    this.dom.append(this.mathjaxDOM);
+
 
     // typeset it
     this.typeset();
@@ -55,8 +61,13 @@ export class MathNodeView implements NodeView {
     return true;
   }
 
+  // ignore mutations outside of the contentDOM (MathJax rendering)
+  public ignoreMutation(mutation: MutationRecord | { type: 'selection'; target: Element }) {
+    return !this.contentDOM || !this.contentDOM.contains(mutation.target);
+  }
+
   private typeset() {
-    this.math.typeset(this.dom, this.node.textContent);
+    this.math.typeset(this.mathjaxDOM, this.node.textContent);
   }
 }
 

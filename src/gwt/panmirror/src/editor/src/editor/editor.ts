@@ -728,7 +728,7 @@ export class Editor {
         format: this.format,
         options: this.options,
         ui: this.context.ui,
-        math: this.context.ui.math.typeset ? editorMath(this.context.ui, new PromiseQueue()) : undefined,
+        math: this.context.ui.math.typeset ? editorMath(this.context.ui) : undefined,
         events: {
           subscribe: this.subscribe.bind(this),
           emit: this.emitEvent.bind(this)

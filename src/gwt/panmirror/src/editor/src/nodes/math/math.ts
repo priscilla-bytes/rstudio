@@ -77,7 +77,6 @@ const extension = (context: ExtensionContext): Extension | null => {
           group: 'inline',
           content: 'inline*',
           inline: true,
-          atom: renderMath,
           attrs: {
             type: {},
           },
