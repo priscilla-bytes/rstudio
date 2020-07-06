@@ -83,7 +83,6 @@ import markQuoted from '../marks/quoted';
 import markRawInline from '../marks/raw_inline/raw_inline';
 import markRawTex from '../marks/raw_inline/raw_tex';
 import markRawHTML from '../marks/raw_inline/raw_html';
-import markMath from '../marks/math/math';
 import markCite from '../marks/cite/cite';
 import markSpan from '../marks/span';
 import markXRef from '../marks/xref/xref';
@@ -100,6 +99,7 @@ import nodeRmdCodeChunk from '../nodes/rmd_chunk/rmd_chunk';
 import nodeDiv from '../nodes/div';
 import nodeLineBlock from '../nodes/line_block';
 import nodeTable from '../nodes/table/table';
+import nodeMath from '../nodes/math/math';
 import nodeDefinitionList from '../nodes/definition_list/definition_list';
 import nodeShortcodeBlock from '../nodes/shortcode_block';
 
@@ -155,6 +155,7 @@ export function initExtensions(context: ExtensionContext, extensions?: readonly 
     nodeYamlMetadata,
     nodeRmdCodeChunk,
     nodeTable,
+    nodeMath,
     nodeDefinitionList,
     nodeLineBlock,
     nodeRawBlock,
@@ -170,7 +171,6 @@ export function initExtensions(context: ExtensionContext, extensions?: readonly 
     markRawTex,
     markRawHTML,
     markRawInline,
-    markMath,
     markCite,
     markSpan,
     markXRef,

@@ -19,7 +19,7 @@ interface PendingPromise<T> {
   reject: (reason: any) => void;
 }
 
-export class PromiseQueue<T> {
+export class PromiseQueue<T = unknown> {
   private queue = new Array<PendingPromise<T>>();
   private running = false;
 
