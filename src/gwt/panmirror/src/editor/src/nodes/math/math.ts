@@ -55,6 +55,14 @@ export enum MathType {
 const MATH_TYPE = 0;
 const MATH_CONTENT = 1;
 
+// TODO: slightly nicer promise queue
+// TODO: show math code until render succeeds
+// TODO: probably always use the node view (and condition the math view inside the node view)
+// TODO: keep previous render on error
+// TODO: debouncing on edit
+// TODO: highlighting
+
+
 const extension = (context: ExtensionContext): Extension | null => {
   const { pandocExtensions, math, format } = context;
 
