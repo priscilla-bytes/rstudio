@@ -43,6 +43,7 @@ export class MathNodeView implements NodeView {
     this.contentDOM = window.document.createElement('span');
     this.dom.append(this.contentDOM);
     this.mathjaxDOM = window.document.createElement('span');
+    this.mathjaxDOM.contentEditable = "false";
     this.dom.append(this.mathjaxDOM);
 
 
