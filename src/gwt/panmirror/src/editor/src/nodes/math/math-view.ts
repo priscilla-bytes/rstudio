@@ -15,9 +15,12 @@
 
 import { Node as ProsemirrorNode } from "prosemirror-model";
 import { NodeView, EditorView, Decoration } from "prosemirror-view";
-import { EditorUIMath } from "../../api/ui";
-import { PromiseQueue } from "../../api/promise";
+
+import debounce from 'lodash.debounce';
+
 import { EditorMath } from "../../api/math";
+
+const kMathEditDebuounceMs = 250;
 
 // custom NodeView that accomodates display / interaction with item check boxes
 export class MathNodeView implements NodeView {
@@ -46,18 +49,24 @@ export class MathNodeView implements NodeView {
     this.mathjaxDOM.contentEditable = "false";
     this.dom.append(this.mathjaxDOM);
 
+    // bind members
+    this.typeset = this.typeset.bind(this);
+    this.handleTypesetResult = this.handleTypesetResult.bind(this);
 
     // typeset it
-    this.typeset();
+    this.typeset().then(this.handleTypesetResult);
 
   }
 
   public update(node: ProsemirrorNode, _decos: Decoration[]) {
+
     if (node.type !== this.node.type) {
       return false;
     }
+
     this.node = node;
-    this.typeset();
+
+    this.debouncedTypeset().then(this.handleTypesetResult);
 
     return true;
   }
@@ -68,7 +77,17 @@ export class MathNodeView implements NodeView {
   }
 
   private typeset() {
-    this.math.typeset(this.mathjaxDOM, this.node.textContent);
+    return this.math.typeset(this.mathjaxDOM, this.node.textContent);
+  }
+
+  private debouncedTypeset = debounce(
+    this.typeset,
+    kMathEditDebuounceMs,
+    { leading: true, trailing: true }
+  );
+
+  private handleTypesetResult(error: boolean) {
+    //
   }
 }
 

@@ -24,7 +24,7 @@ export class PromiseQueue<T = unknown> {
   private running = false;
 
   public enqueue(promise: () => Promise<T>) {
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       this.queue.push({
         promise,
         resolve,
