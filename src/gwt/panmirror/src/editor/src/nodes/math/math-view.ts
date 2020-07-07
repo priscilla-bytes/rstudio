@@ -44,11 +44,22 @@ export class MathNodeView implements NodeView {
     // create root span element
     this.dom = window.document.createElement('div');
     this.dom.classList.add('pm-math-view');
+
+    // contentDOM is a div that can be used to edit the math
     this.contentDOM = window.document.createElement('div');
-    this.contentDOM.classList.add('pm-math-view-code');
+    this.contentDOM.spellcheck = false;
+    this.contentDOM.setAttribute('data-type', node.attrs.type);
+    this.contentDOM.classList.add(
+      'pm-math-view-code',
+      'pm-fixedwidth-font',
+      'pm-light-text-color',
+    );
     this.dom.append(this.contentDOM);
+
+    // mathjax preview
     this.mathjaxDOM = window.document.createElement('div');
     this.mathjaxDOM.classList.add('pm-math-view-mathjax');
+    this.mathjaxDOM.style.display = 'none';
     this.mathjaxDOM.contentEditable = "false";
     this.dom.append(this.mathjaxDOM);
 

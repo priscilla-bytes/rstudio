@@ -40,6 +40,7 @@ import { kCodeText } from '../../api/code';
 import './math-styles.css';
 import { EditorView } from 'prosemirror-view';
 import { MathNodeView } from './math-view';
+import { mathHighlightPlugin } from './math-highlight';
 
 const kInlineMathPattern = '\\$[^ ].*?[^\\ ]\\$';
 const kInlineMathRegex = new RegExp(kInlineMathPattern);
@@ -189,8 +190,11 @@ const extension = (context: ExtensionContext): Extension | null => {
       },
     ],
 
+
+
     plugins: (schema: Schema) => {
-      const plugins: Plugin[] = [];
+
+      const plugins: Plugin[] = [mathHighlightPlugin(schema)];
 
       if (renderMath) {
         plugins.push(

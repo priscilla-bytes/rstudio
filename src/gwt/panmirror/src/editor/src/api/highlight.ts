@@ -15,21 +15,21 @@
 
 import { PluginKey, Plugin, EditorState, Transaction } from 'prosemirror-state';
 import { DecorationSet, Decoration } from 'prosemirror-view';
-import { Node as ProsemirrorNode, MarkType } from 'prosemirror-model';
-import { findChildrenByMark } from 'prosemirror-utils';
+import { Node as ProsemirrorNode, MarkType, NodeType } from 'prosemirror-model';
+import { findChildrenByMark, findChildrenByType, NodeWithPos } from 'prosemirror-utils';
 import { AddMarkStep, RemoveMarkStep } from 'prosemirror-transform';
 
 import { getMarkRange, getMarkAttrs } from './mark';
 import { forChangedNodes } from './transaction';
 
-export type MarkHighligher = (
+export type Highlghter = (
   text: string,
   attrs: { [key: string]: any },
   range: { from: number; to: number },
 ) => Decoration[];
 
-export function markHighlightDecorations(
-  markRange: { from: number; to: number },
+export function highlightDecorations(
+  range: { from: number; to: number },
   text: string,
   re: RegExp,
   className: string,
@@ -39,7 +39,7 @@ export function markHighlightDecorations(
   let match = re.exec(text);
   while (match) {
     decorations.push(
-      Decoration.inline(markRange.from + match.index, markRange.from + re.lastIndex, { class: className }),
+      Decoration.inline(range.from + match.index, range.from + re.lastIndex, { class: className }),
     );
     match = re.exec(text);
   }
@@ -47,7 +47,62 @@ export function markHighlightDecorations(
   return decorations;
 }
 
-export function markHighlightPlugin(key: PluginKey<DecorationSet>, markType: MarkType, highlighter: MarkHighligher) {
+export function nodeHighlightPlugin(key: PluginKey<DecorationSet>, nodeType: NodeType, highlighter: Highlghter) {
+
+  function decorationsForNode(nodeWithPos: NodeWithPos) {
+    const node = nodeWithPos.node;
+    const from = nodeWithPos.pos + 1;
+    const to = from + node.nodeSize - 1;
+    return highlighter(node.textContent, node.attrs, { from, to });
+  }
+
+  function decorationsForDoc(doc: ProsemirrorNode) {
+    let decorations: Decoration[] = [];
+    findChildrenByType(doc, nodeType, true).forEach(nodeWithPos => {
+      decorations = decorations.concat(decorationsForNode(nodeWithPos));
+    });
+    return DecorationSet.create(doc, decorations);
+  }
+
+  return new Plugin<DecorationSet>({
+    key,
+    state: {
+      // initialize by highlighting the entire document
+      init(_config: { [key: string]: any }, instance: EditorState) {
+        return decorationsForDoc(instance.doc);
+      },
+
+      // whenever an edit affecting this mark type occurs then update the decorations
+      apply(tr: Transaction, set: DecorationSet, oldState: EditorState, newState: EditorState) {
+
+        // adjust decoration positions to changes made by the transaction (decorations that apply
+        // to removed chunks of content will be removed by this)
+        set = set.map(tr.mapping, tr.doc);
+
+        // rehighlight nodes of our type that changed
+        if (tr.docChanged) {
+          forChangedNodes(
+            oldState,
+            newState,
+            node => node.type === nodeType,
+            (node, pos) => {
+              set = set.add(tr.doc, decorationsForNode({ node, pos }));
+            },
+          );
+        }
+
+        return set;
+      },
+    },
+    props: {
+      decorations(state: EditorState) {
+        return key.getState(state);
+      },
+    },
+  });
+}
+
+export function markHighlightPlugin(key: PluginKey<DecorationSet>, markType: MarkType, highlighter: Highlghter) {
   function decorationsForDoc(doc: ProsemirrorNode) {
     let decorations: Decoration[] = [];
     findChildrenByMark(doc, markType, true).forEach(markedNode => {
@@ -127,7 +182,7 @@ export function markHighlightPlugin(key: PluginKey<DecorationSet>, markType: Mar
   });
 }
 
-function markDecorations(doc: ProsemirrorNode, markType: MarkType, pos: number, highlighter: MarkHighligher) {
+function markDecorations(doc: ProsemirrorNode, markType: MarkType, pos: number, highlighter: Highlghter) {
   const markRange = getMarkRange(doc.resolve(pos), markType);
   if (markRange) {
     const attrs = getMarkAttrs(doc, markRange, markType);

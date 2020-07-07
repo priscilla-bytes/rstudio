@@ -24,7 +24,7 @@ import { setTextSelection } from 'prosemirror-utils';
 import { PandocToken, PandocTokenType, PandocOutput } from '../../api/pandoc';
 import { Extension, ExtensionContext } from '../../api/extension';
 import { kTexFormat } from '../../api/raw';
-import { markHighlightPlugin, markHighlightDecorations } from '../../api/mark-highlight';
+import { markHighlightPlugin, highlightDecorations } from '../../api/highlight';
 import { MarkTransaction } from '../../api/transaction';
 import { markIsActive, splitInvalidatedMarks } from '../../api/mark';
 import { EditorCommandId } from '../../api/command';
@@ -215,8 +215,8 @@ export function latexHighlightingPlugin(schema: Schema) {
   const kLightTextClass = 'pm-light-text-color';
   return markHighlightPlugin(key, schema.marks.raw_tex, (text, _attrs, markRange) => {
     const kIdClass = 'pm-markup-text-color';
-    let decorations = markHighlightDecorations(markRange, text, /\\[A-Za-z]+/g, kIdClass);
-    decorations = decorations.concat(markHighlightDecorations(markRange, text, /[{}[\]]/g, kLightTextClass));
+    let decorations = highlightDecorations(markRange, text, /\\[A-Za-z]+/g, kIdClass);
+    decorations = decorations.concat(highlightDecorations(markRange, text, /[{}[\]]/g, kLightTextClass));
     return decorations;
   });
 }

@@ -13,7 +13,7 @@
  *
  */
 
-.ProseMirror .math[data-type='DisplayMath'] {
+.ProseMirror .pm-math-view-code[data-type='DisplayMath'] {
   white-space: pre-wrap;  
 }
 

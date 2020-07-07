@@ -17,14 +17,14 @@ import { PluginKey } from 'prosemirror-state';
 import { DecorationSet, Decoration } from 'prosemirror-view';
 import { Schema } from 'prosemirror-model';
 
-import { markHighlightPlugin } from '../../api/highlight';
+import { nodeHighlightPlugin } from '../../api/highlight';
 
 import { delimiterForType } from './math';
 
 const key = new PluginKey<DecorationSet>('math-highlight');
 
 export function mathHighlightPlugin(schema: Schema) {
-  return markHighlightPlugin(key, schema.marks.math, (_text, attrs, markRange) => {
+  return nodeHighlightPlugin(key, schema.nodes.math, (_text, attrs, markRange) => {
     const kDelimClass = 'pm-markup-text-color';
     const delim = delimiterForType(attrs.type);
     if (markRange.to - markRange.from === delim.length * 2) {
