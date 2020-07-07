@@ -16,3 +16,22 @@
 .ProseMirror .math[data-type='DisplayMath'] {
   white-space: pre-wrap;  
 }
+
+.pm-math-view {
+  display: inline-block;
+}
+
+/*
+.pm-math-view-code {
+
+}
+
+.pm-math-view-error .pm-math-view-mathjax {
+ 
+}
+
+.pm-math-view-rendered .pm-math-view-code {
+ 
+}
+*/
+

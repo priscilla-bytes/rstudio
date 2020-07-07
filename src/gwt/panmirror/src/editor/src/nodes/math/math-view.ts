@@ -42,10 +42,13 @@ export class MathNodeView implements NodeView {
     this.math = math;
 
     // create root span element
-    this.dom = window.document.createElement('span');
-    this.contentDOM = window.document.createElement('span');
+    this.dom = window.document.createElement('div');
+    this.dom.classList.add('pm-math-view');
+    this.contentDOM = window.document.createElement('div');
+    this.contentDOM.classList.add('pm-math-view-code');
     this.dom.append(this.contentDOM);
-    this.mathjaxDOM = window.document.createElement('span');
+    this.mathjaxDOM = window.document.createElement('div');
+    this.mathjaxDOM.classList.add('pm-math-view-mathjax');
     this.mathjaxDOM.contentEditable = "false";
     this.dom.append(this.mathjaxDOM);
 
@@ -87,7 +90,11 @@ export class MathNodeView implements NodeView {
   );
 
   private handleTypesetResult(error: boolean) {
-    //
+    if (error) {
+      this.dom.classList.remove('pm-math-view-rendered');
+    } else {
+      this.dom.classList.add('pm-math-view-rendered');
+    }
   }
 }
 
